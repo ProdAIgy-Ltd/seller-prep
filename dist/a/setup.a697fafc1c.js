@@ -139,7 +139,10 @@ function build(){
   if(v('g-closing')) s.closing=v('g-closing');
   if(v('g-condo'))   s.condo=1;
   if(v('g-buying'))  s.buying=1;
-  if(v('g-rented'))  s.rented=1;
+  // Explicit either way: absent means TRUE for this one, so an agent who
+  // unticks it and sends the link would otherwise hand the client a list with
+  // the rented items still on it.
+  s.rented = v('g-rented') ? 1 : 0;
   if(Object.keys(s).length) frag.push('s='+b64e(s));
   var url=base+(frag.length?'#'+frag.join('&'):'');
   document.getElementById('out').textContent=url;

@@ -74,13 +74,27 @@ function phaseDate(off){
 // ---------------------------------------------------------------------------
 // Which items apply. An item with flags shows only when every flag is on.
 // ---------------------------------------------------------------------------
-function flagsOn(){
+// ONE derivation, used by the page and by the count inside the sheet. They had
+// two, and the sheet's copy invented its own flag names: it asked for `rented`
+// and `freehold` was not in its vocabulary at all, so it quietly dropped every
+// house-only item and told a seller their list was 34 things while the header
+// said 36. A second copy of a rule is a second answer.
+function flagsFrom(st){
   return {
-    condo:    !!S.condo,
-    freehold: !S.condo,
-    buying:   !!S.buying,
-    rented_kit: S.rented === undefined ? true : !!S.rented
+    condo:    !!st.condo,
+    freehold: !st.condo,
+    buying:   !!st.buying,
+    rented_kit: st.rented === undefined ? true : !!st.rented
   };
+}
+function flagsOn(){ return flagsFrom(S); }
+function itemsFor(on){
+  var n=0;
+  document.querySelectorAll('li.item').forEach(function(li){
+    var f=li.dataset.flags ? li.dataset.flags.split(',') : [];
+    if(f.every(function(x){ return on[x]; })) n++;
+  });
+  return n;
 }
 function applyFlags(){
   var on=flagsOn(), shown=0;
@@ -90,6 +104,7 @@ function applyFlags(){
     li.hidden=!ok;
     if(ok) shown++;
   });
+
   document.querySelectorAll('.phase').forEach(function(ph){
     var any=[].slice.call(ph.querySelectorAll('li.item')).some(function(l){return !l.hidden;});
     ph.hidden=!any;
@@ -428,25 +443,16 @@ document.addEventListener('close', function(e){
   }
 }, true);
 
-// How many items a given set of answers actually leaves on the list, without
-// touching the page: the same flag rules applyFlags uses, counted on the side.
-function countFor(f){
-  var n=0;
-  document.querySelectorAll('li.item').forEach(function(li){
-    var flags=(li.dataset.flags||'').split(',').filter(Boolean);
-    var show=true;
-    flags.forEach(function(fl){ if(!f[fl]) show=false; });
-    if(show) n++;
-  });
-  return n;
-}
-
 function formEcho(){
   var v=document.getElementById('f-closing'), out=document.getElementById('f-payoff'),
       cnt=document.getElementById('f-count');
   var d=v?parseYMD(v.value):null;
   if(out){
-    if(!d){ out.textContent=''; }
+    // An empty date input paints NOTHING on iOS: no placeholder, no format,
+    // just a box a person has to guess is tappable. The prompt goes UNDER the
+    // field rather than inside it, because every other browser DOES paint its
+    // own mm/dd/yyyy in there and an overlay lands on top of it.
+    if(!d){ out.textContent='Tap the box above and pick your closing day.'; }
     else{
       var n=Math.round((midnight(d)-midnight(new Date()))/86400000);
       var when = n>1 ? n+' days away'
@@ -458,10 +464,12 @@ function formEcho(){
     }
   }
   if(cnt){
-    var f={condo:!!(document.getElementById('f-condo')||{}).checked,
-           buying:!!(document.getElementById('f-buying')||{}).checked,
-           rented:!!(document.getElementById('f-rented')||{}).checked};
-    cnt.innerHTML='Your list: <b>'+countFor(f)+' things</b>.';
+    var n=itemsFor(flagsFrom({
+      condo:  !!(document.getElementById('f-condo')||{}).checked,
+      buying: !!(document.getElementById('f-buying')||{}).checked,
+      rented: !!(document.getElementById('f-rented')||{}).checked
+    }));
+    cnt.innerHTML='Your list: <b>'+n+' things</b>.';
   }
 }
 
@@ -541,7 +549,15 @@ function boot(){
       buying:  document.getElementById('f-buying').checked?1:0,
       rented:  document.getElementById('f-rented').checked?1:0
     };
-    Object.keys(S).forEach(function(k){ if(S[k]===''||S[k]===0) delete S[k]; });
+    // `rented` defaults to TRUE when it is absent, so unlike the other two it
+    // cannot be expressed by leaving it out: stripping `rented:0` from the link
+    // turns the rented items straight back on, and a seller who had just told
+    // the page nothing here is rented got them anyway. Drop the flags whose
+    // absence already means false; keep this one, explicitly.
+    Object.keys(S).forEach(function(k){
+      if(S[k]==='') delete S[k];
+      else if(S[k]===0 && k!=='rented') delete S[k];
+    });
     CLOSING=parseYMD(S.closing);
     var keep = AGENT_OVERRIDE ? ('a='+b64e(AGENT_OVERRIDE)+'&') : '';
     history.replaceState(null,'', location.pathname + (Object.keys(S).length? ('#'+keep+'s='+b64e(S)) : (keep?'#'+keep.slice(0,-1):'')));

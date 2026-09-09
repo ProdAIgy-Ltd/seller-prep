@@ -396,8 +396,8 @@ dialog[open]::backdrop{animation:fadein .3s ease}
    CONTENT size, so `flex:1` alone will not let this shrink: the body keeps its
    full height, the footer is pushed past the bottom of the sheet, and
    overflow:hidden then clips the only button away rather than showing it. */
-.sheet-body{overflow-y:auto;overscroll-behavior:contain;padding:4px 20px 20px;
-  flex:1;min-height:0}
+.sheet-body{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:4px 20px 20px;flex:1;min-height:0}
 .sheet-foot{
   flex:none;padding:13px 20px;border-top:1px solid var(--line);background:var(--canvas);
   padding-bottom:calc(13px + env(safe-area-inset-bottom));
@@ -412,11 +412,18 @@ dialog[open]::backdrop{animation:fadein .3s ease}
   text-transform:uppercase;color:var(--grey);margin-bottom:8px;
 }
 .bigfield input{
-  width:100%;min-height:56px;padding:12px 15px;border:1.5px solid var(--line2);
+  display:block;width:100%;max-width:100%;min-width:0;
+  min-height:56px;padding:12px 15px;border:1.5px solid var(--line2);
   border-radius:12px;font-family:var(--body);font-size:17px;color:var(--ink);
   background:var(--canvas);transition:border-color .3s var(--ease);
+  /* iOS gives input[type=date] an intrinsic width from its own date format and
+     will NOT shrink it to its container, so the field ran off the right edge
+     and the whole sheet could be dragged sideways. appearance:none plus an
+     explicit min-width:0 is what makes width:100% actually mean 100%. */
+  -webkit-appearance:none;appearance:none;
 }
 .bigfield input:focus{border-color:var(--ink);outline:none}
+
 /* The payoff. A person types a date and sees, before they commit to anything,
    exactly what it bought them. Empty until there is something true to say, so
    it never occupies space with a placeholder. */

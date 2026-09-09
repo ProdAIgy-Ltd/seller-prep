@@ -279,6 +279,43 @@ page leaves the reader hunting. Absent until there is a closing date, because
 without one nothing is due, and hidden in print, where it would be true on the
 day it was printed and wrong the week after.
 
+### One rule, one place
+
+The count in the sheet and the count in the header answer the same question, and
+they disagreed in half the combinations. Two causes, both the same shape:
+
+- The sheet had grown its **own copy of the flag rules**, under its own names.
+  It asked for `rented` and had never heard of `freehold`, so it silently
+  dropped every house-only item and told a seller their list was 34 things while
+  the header said 36. Both now derive from one `flagsFrom` and count with one
+  `itemsFor`.
+- Separately, the page **threw away an explicit "nothing here is rented"**. That
+  flag defaults to TRUE when it is absent, so unlike the other two it cannot be
+  expressed by omission, and the submit handler stripped zeros out of the link.
+  A seller who had just told the page nothing was rented got the rented items
+  anyway. Same bug in `/setup`, so an agent could not turn it off either.
+
+The gate now fills the sheet in and reads both numbers back for all eight
+combinations of the three answers.
+
+### Writing a twelve year old can follow
+
+Measured, not felt. `audit.py` scores Flesch-Kincaid over the **prose blocks**
+a seller reads, one at a time: running the page through as a single string welds
+headings and bullet lists into sentences nobody wrote and reports a grade nobody
+experiences. It currently reads **grade 6.4**, and the gate fails above 8.
+
+The average alone is too blunt, because one impenetrable paragraph in eighty
+moves it by a tenth of a grade. So each block is checked for its own density
+too. That line is derived rather than chosen: across the seventy blocks of eight
+words or more the worst sits at 1.80 syllables per word and the median at 1.39,
+while a paragraph rewritten in officialese reads 2.63. Two point zero is
+therefore silent today and catches that with room to spare, and a mutant that
+rewrote one paragraph in officialese is what proved it.
+
+The source fold is excluded: it cites outside documents by their real titles,
+which are not ours to simplify.
+
 ### The client's sheet
 
 One question carries the whole thing, so the sheet asks it: **when do you

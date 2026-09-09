@@ -83,23 +83,22 @@ HEADLINES = [
         "n": "01",
         "title": "Keep the house insured until your lawyer says it closed",
         "body": "Not until closing day. Until your lawyer confirms the deal "
-                "registered and the money moved. Closings slip by a day fairly "
-                "often, and a house that burns while it is uninsured and still "
-                "in your name is your loss.",
+                "registered. Closings often slip by a day, and an uninsured day "
+                "could haunt you.",
     },
     {
         "n": "02",
         "title": "Ask your lender for the payout figure the day the deal is firm",
-        "body": "Breaking a mortgage early carries a charge, and on a fixed rate "
-                "it is usually the biggest single cost of selling. You want that "
-                "number in writing early, while you can still do something about it.",
+        "body": "Ending a mortgage early carries a penalty, and on a fixed rate "
+                "it is usually the biggest single cost of selling. Get that number "
+                "in writing now, while you can still do something about it.",
     },
     {
         "n": "03",
         "title": "Book the movers before you do anything else on this page",
-        "body": "Most Ontario deals close on the last business day of the month, "
-                "so every seller in the province wants the same truck on the same "
-                "morning. In a condo the elevator books out too.",
+        "body": "Most deals close on the last day of the month, so every seller "
+                "wants the same truck on the same morning. In a condo the elevator "
+                "books out too.",
     },
 ]
 
@@ -119,68 +118,68 @@ PHASES = [
                 "id": "lawyer",
                 "title": "Send the signed agreement to your lawyer",
                 "detail": "If you do not have a real estate lawyer yet, get one "
-                          "this week. Your lawyer needs the full agreement "
-                          "including every amendment and waiver, not just the "
-                          "front page. They handle the transfer of title, the "
-                          "payout of your mortgage and the money, and they cannot "
-                          "start until they have the paperwork.",
+                          "this week. Send the whole agreement, including every "
+                          "page you both signed after it, not just the front one. "
+                          "Your lawyer puts the house into the buyer's name, pays "
+                          "off your mortgage and handles the money. None of that "
+                          "starts until they have the paperwork.",
             },
             {
                 "id": "lender",
                 "title": "Tell your lender you are selling, and ask for the payout statement",
-                "detail": "Ask for three things in writing: the balance, the "
-                          "discharge fee, and the prepayment charge for ending "
-                          "the term early. On a fixed rate that charge is worked "
-                          "out one of two ways and one of them is far larger, so "
-                          "get the actual figure rather than a rule of thumb. If "
-                          "you are buying again, ask in the same call whether your "
+                "detail": "Ask for three numbers in writing: what you still "
+                          "owe, the fee to close the mortgage, and the penalty for "
+                          "paying it off early. On a fixed rate that penalty is "
+                          "worked out one of two ways and one of them is far "
+                          "bigger, so ask for the real number, not an estimate. If "
+                          "you are buying again, ask on the same call whether your "
                           "mortgage can move to the new home at the same rate, and "
-                          "how many days the lender allows between the two closings.",
+                          "how many days the lender allows between the two sales.",
                 "src": ["discharge", "porting"],
                 "money": True,
             },
             {
                 "id": "movers",
                 "title": "Book the movers",
-                "detail": "Get the quote in writing with the date, the start time, "
-                          "the two addresses, the price, and what their insurance "
-                          "covers if something of yours breaks. Month end fills "
-                          "first because most closings land there.",
+                "detail": "Get the quote in writing: the date, the start time, "
+                          "both addresses, the price, and what their insurance pays "
+                          "if they break something of yours. The end of the month "
+                          "fills up first, because that is when most sales close.",
             },
             {
                 "id": "condo-rules",
-                "title": "Ask property management for the moving rules and book the elevator",
-                "detail": "Buildings set the hours, the entrance, and the notice "
-                          "they need, which runs from about a week to a month. "
-                          "Most also want a deposit you get back if nothing is "
-                          "damaged, and a certificate of insurance from your mover "
-                          "naming the building. Ask the mover for that certificate "
-                          "when you book, not on the morning, because a rejection "
-                          "at eight o'clock costs you the elevator slot.",
+                "title": "Ask the building for its moving rules, and book the elevator",
+                "detail": "Buildings set the hours, the entrance, and how much "
+                          "notice they need, which runs from about a week to a "
+                          "month. Most also want a deposit you get back if nothing "
+                          "is damaged, plus proof your mover is insured with the "
+                          "building's name on it. Ask the mover for that proof when "
+                          "you book, not on the morning. Turned away at eight "
+                          "o'clock and you have lost the elevator for the day.",
                 "flags": ["condo"],
                 "src": ["condo_move"],
             },
             {
                 "id": "insurance-tell",
                 "title": "Tell your insurer the closing date, and do not cancel anything",
-                "detail": "You are responsible for the house until it legally "
-                          "changes hands. Give your insurer the date so the policy "
-                          "runs past it, and leave the cancelling until your lawyer "
-                          "confirms the deal is done.",
+                "detail": "The house is yours until it legally changes hands, "
+                          "whatever the calendar says. Give your insurer the closing "
+                          "date so the policy runs past it, and do not cancel "
+                          "anything until your lawyer says the deal is done.",
                 "src": ["insurance"],
                 "critical": True,
             },
             {
                 "id": "chattels",
                 "title": "Reread what you agreed to leave behind",
-                "detail": "Anything bolted, wired or plumbed in is a fixture and "
-                          "stays unless the agreement says in writing that you are "
-                          "taking it. Anything loose is a chattel and goes with you "
-                          "unless the agreement says in writing that it stays. The "
-                          "light fixture you meant to keep, the shed, the mounted "
-                          "television, the appliances: check each one now, while "
-                          "there is still time to talk about it, rather than on "
-                          "closing morning when it becomes a dispute.",
+                "detail": "The rule is simple. Anything bolted, wired or "
+                          "plumbed in stays with the house, unless the agreement "
+                          "says in writing that you are taking it. Anything loose "
+                          "goes with you, unless the agreement says in writing that "
+                          "it stays. So check the light you meant to keep, the "
+                          "shed, the television on the wall, the appliances. Do it "
+                          "now, while there is still time to talk about it, rather "
+                          "than on the morning when it turns into an argument.",
                 "src": ["chattels"],
             },
         ],
@@ -195,15 +194,15 @@ PHASES = [
             {
                 "id": "rentals",
                 "title": "Find every rental contract and decide: pay it out, or hand it over",
-                "detail": "Water heater, furnace, air conditioner, water softener, "
-                          "air exchanger, alarm gear. These companies usually "
-                          "register a notice against your title, so your lawyer "
-                          "has to deal with it either way. Either the buyer agrees "
-                          "to take the contract over, which needs to be in the "
-                          "agreement, or you pay it out before closing. Ask each "
-                          "company for the buyout figure now: it drops as the "
-                          "equipment ages and it is not a number you want to "
-                          "discover on closing day.",
+                "detail": "Water heater, furnace, air conditioner, water "
+                          "softener, air exchanger, alarm gear. These companies "
+                          "usually put a claim on the house, so your lawyer has to "
+                          "clear it either way. Either the buyer agrees to take the "
+                          "contract over, which has to be written into the "
+                          "agreement, or you pay it off before closing. Ask each "
+                          "company what the payoff is now. It gets smaller as the "
+                          "equipment ages, and it is not a number you want to meet "
+                          "for the first time on closing day.",
                 "flags": ["rented_kit"],
                 "src": ["rentals", "rentals_clause"],
                 "money": True,
@@ -211,19 +210,20 @@ PHASES = [
             {
                 "id": "lawyer-docs",
                 "title": "Send your lawyer the rest of what they asked for",
-                "detail": "Usually: photo identification for everyone on title, "
-                          "your mortgage details, any rental contracts, the survey "
-                          "if you have one, and your forwarding address. If anyone "
-                          "on title has changed their name, married, separated or "
-                          "died since you bought, tell them now, because that adds "
-                          "steps.",
+                "detail": "Usually: photo identification for everyone whose "
+                          "name is on the house, your mortgage details, any rental "
+                          "contracts, the property survey if you have one, and "
+                          "where to send your mail. If any of those names has "
+                          "changed since you bought, through marriage, separation "
+                          "or a death, say so now. It adds steps.",
             },
             {
                 "id": "status",
                 "title": "Get the status certificate ordered if the buyer has not",
-                "detail": "The buyer's side usually orders it, but it comes from "
-                          "your corporation and it carries the moving rules you "
-                          "will need anyway. Ask management how long they take.",
+                "detail": "It is the building's official information package, "
+                          "and the buyer's side usually orders it. It comes from "
+                          "your building though, and it carries the moving rules "
+                          "you need anyway. Ask management how long they take.",
                 "flags": ["condo"],
             },
             {
@@ -236,11 +236,11 @@ PHASES = [
             {
                 "id": "two-closings",
                 "title": "Line your two closing dates up with your lawyer",
-                "detail": "Selling and buying on the same day is normal and it is "
-                          "tight: the money from your sale usually funds your "
-                          "purchase, and it moves in the afternoon. If the dates do "
-                          "not line up you need bridge financing arranged in "
-                          "advance, not on the day.",
+                "detail": "Selling and buying on the same day is normal, and it "
+                          "is tight. The money from your sale usually pays for your "
+                          "purchase, and it does not move until the afternoon. If "
+                          "the two dates do not line up, you need a short loan to "
+                          "cover the gap, arranged well before the day.",
                 "flags": ["buying"],
             },
             {
@@ -275,10 +275,11 @@ PHASES = [
             {
                 "id": "serviceontario",
                 "title": "Update your driver's licence, plates and health card",
-                "detail": "Ontario law gives you six days after you move to update "
-                          "your driver's licence and vehicle permit. One online "
-                          "session covers the licence, the plates, the health card "
-                          "and the photo card together.",
+                "detail": "You get six days after you move to update your "
+                          "driver's licence and vehicle permit. That is the law, "
+                          "and it is easy to miss. One session online covers the "
+                          "licence, the plates, the health card and the photo card "
+                          "in one go.",
                 "src": ["serviceontario"],
                 "link": ("Change your address with ServiceOntario",
                          "https://www.ontario.ca/page/change-my-address-ontario-services"),
@@ -287,15 +288,15 @@ PHASES = [
             {
                 "id": "utilities",
                 "title": "Book the final readings for the day of closing, not before",
-                "detail": "Electricity, gas, water, internet, telephone. Give each "
-                          "one the closing date as the last day in your name. Do "
-                          "not shut anything off early: the buyer walks through "
-                          "before closing and needs the lights and the furnace to "
-                          "work. Your electricity company depends on where you "
-                          "live rather than who you buy from, so check the bill "
-                          "for the name if you are not sure.",
+                "detail": "Electricity, gas, water, internet, telephone. Give "
+                          "each one the closing date as your last day. Do not shut "
+                          "anything off early: the buyer walks through the house "
+                          "just before closing and needs the lights and the heat "
+                          "working. Which electricity company you are with depends "
+                          "on where you live, so check the name on a bill if you "
+                          "are not sure.",
                 "src": ["ldc"],
-                "link": ("Find your local hydro utility",
+                "link": ("Find your electricity company",
                          "https://energyrates.ca/ontario/ontarios-local-hydro-utilities-ldc/"),
                 "critical": True,
             },
@@ -362,10 +363,10 @@ PHASES = [
             },
             {
                 "id": "confirm-elevator",
-                "title": "Confirm the elevator and get the insurance certificate to management",
-                "detail": "Call the office rather than assuming the booking held. "
-                          "Send the mover's certificate of insurance now so someone "
-                          "has time to read it.",
+                "title": "Confirm the elevator, and send the building your mover's insurance",
+                "detail": "Call the office rather than assuming the booking "
+                          "held. Send the mover's proof of insurance now, so "
+                          "somebody has time to read it before the day.",
                 "flags": ["condo"],
             },
             {
@@ -403,18 +404,18 @@ PHASES = [
             {
                 "id": "sign",
                 "title": "Sign at your lawyer's office",
-                "detail": "This is usually a few days before closing rather than on "
-                          "the day. Bring photo identification for everyone on "
-                          "title. Confirm at the same time exactly where your money "
-                          "goes and how it gets there.",
+                "detail": "This usually happens a few days before closing, not "
+                          "on the day. Bring photo identification for everyone "
+                          "whose name is on the house. While you are there, settle "
+                          "exactly where your money goes and how it reaches you.",
             },
             {
                 "id": "returns",
-                "title": "Return the equipment that belongs to somebody else",
-                "detail": "Cable boxes, modems, alarm panels, propane tanks, water "
-                          "cooler bottles, library books. Anything you keep gets "
-                          "billed to you months later at a price nobody would agree "
-                          "to in advance.",
+                "title": "Give back anything that is not yours",
+                "detail": "Cable boxes, modems, alarm panels, propane tanks, "
+                          "water cooler bottles, library books. Anything you keep "
+                          "gets billed to you months later, at a price nobody would "
+                          "have agreed to up front.",
             },
             {
                 "id": "parking",
@@ -443,9 +444,10 @@ PHASES = [
             {
                 "id": "meters",
                 "title": "Photograph every meter",
-                "detail": "Electricity, gas, water. Get the numbers legible and the "
-                          "date on the photo. This is the whole of your defence "
-                          "against a final bill that covers somebody else's use.",
+                "detail": "Electricity, gas, water. Make sure the numbers are "
+                          "readable and the date is on the photo. This is the only "
+                          "thing standing between you and a final bill that covers "
+                          "somebody else's use.",
                 "critical": True,
             },
             {
@@ -460,11 +462,11 @@ PHASES = [
             {
                 "id": "broom",
                 "title": "Leave it broom clean",
-                "detail": "Floors swept, carpets vacuumed, surfaces wiped, nothing "
-                          "left behind. Nothing at the curb either: what you leave "
-                          "for the garbage becomes the buyer's problem and, quite "
-                          "often, your bill. If the agreement asks for more than "
-                          "broom clean, do what it says.",
+                "detail": "Floors swept, carpets vacuumed, surfaces wiped, "
+                          "nothing left behind. Nothing out at the curb either: "
+                          "what you leave for the rubbish becomes the buyer's "
+                          "problem and, often enough, your bill. If the agreement "
+                          "asks for more than broom clean, do what it says.",
             },
             {
                 "id": "leave-pack",
@@ -505,10 +507,10 @@ PHASES = [
             {
                 "id": "keys-drop",
                 "title": "Get every key to your lawyer",
-                "detail": "Usually first thing in the morning unless they told you "
-                          "otherwise. Label them. The buyer does not get in until "
-                          "the money and the title have both moved, and your keys "
-                          "are what is waiting.",
+                "detail": "First thing in the morning, unless they told you "
+                          "otherwise. Label them. The buyer cannot get in until the "
+                          "money has moved and the house is in their name, and your "
+                          "keys are the last thing anybody is waiting on.",
             },
             {
                 "id": "reachable",
@@ -519,9 +521,9 @@ PHASES = [
             {
                 "id": "hold-insurance",
                 "title": "Still do not cancel your insurance",
-                "detail": "Wait for your lawyer to confirm the transfer registered "
-                          "and the money was released. That confirmation is the "
-                          "moment the house stops being your risk.",
+                "detail": "Wait until your lawyer confirms the house is in the "
+                          "buyer's name and the money has been released. That "
+                          "message is the moment it stops being your risk.",
                 "critical": True,
             },
         ],
@@ -541,23 +543,23 @@ PHASES = [
             {
                 "id": "final-bills",
                 "title": "Watch for the final bills",
-                "detail": "Utility accounts close on a reading rather than on your "
-                          "instruction, so the last bill arrives a few weeks later "
-                          "and goes to the forwarded address. Check it against the "
-                          "meter photos you took.",
+                "detail": "These accounts close on a meter reading, not on the "
+                          "day you call, so the last bill turns up a few weeks "
+                          "later at your forwarded address. Check it against the "
+                          "photos you took.",
             },
             {
                 "id": "keep-papers",
                 "title": "Keep the closing package somewhere you will find it",
-                "detail": "The statement of adjustments and the lawyer's reporting "
-                          "letter are tax documents. Keep them with the paperwork "
-                          "from when you bought.",
+                "detail": "The final money summary and your lawyer's closing "
+                          "letter are tax records. Keep them with the paperwork "
+                          "from when you bought the place.",
             },
             {
                 "id": "cra",
                 "title": "Report the sale on next year's tax return",
-                "detail": "Every home sale gets reported, including one that is "
-                          "fully covered by the principal residence exemption. Not "
+                "detail": "Every home sale has to be reported, even when you owe "
+                          "no tax on it because it was the place you lived. Not "
                           "reporting it can cost one hundred dollars a month up to "
                           "eight thousand. Your accountant needs the date you "
                           "bought, the date you sold, and both prices.",

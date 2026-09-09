@@ -148,6 +148,38 @@ def _margin_ink(im, side_mm=12, ends_mm=14, tol_mm=1.5):
     return None
 
 
+def _syllables(w):
+    w = w.lower().strip(".,;:!?'\"()")
+    if not w:
+        return 0
+    w = re.sub(r"e$", "", w)
+    return max(1, len(re.findall(r"[aeiouy]+", w)))
+
+
+def reading_grade(blocks):
+    """Flesch-Kincaid over the PROSE a seller reads, block by block.
+
+    Keith's bar is that a twelve year old can understand it, which is about
+    grade seven, and that is a measurement rather than a feeling. Measured per
+    block on purpose: running the whole page through as one string welds
+    headings and bullet lists into sentences nobody wrote and reports a grade
+    nobody experiences. The source fold is excluded because it cites external
+    documents by their real titles, which are not ours to simplify.
+    """
+    words = sents = syl = 0
+    for t in blocks:
+        ws = re.findall(r"[A-Za-z']+", t)
+        ss = [x for x in re.split(r"(?<=[.!?])\s+", t.strip()) if len(x.split()) >= 3]
+        if not ws or not ss:
+            continue
+        words += len(ws)
+        sents += len(ss)
+        syl += sum(_syllables(w) for w in ws)
+    if not words or not sents:
+        return None
+    return 0.39 * (words / sents) + 11.8 * (syl / words) - 15.59
+
+
 def main():
     SHOTS.mkdir(exist_ok=True)
     srv = serve()
@@ -284,8 +316,111 @@ def main():
             else:
                 notes.append(f"#{dlg_id}: '{r['label']}' on screen at "
                              f"{r['bottom']}px of {r['vh']}px")
+            # Nothing inside a sheet may be wider than the sheet. On iOS
+            # an input[type=date] keeps an intrinsic width from its own
+            # date format and will not shrink, so the field ran off the
+            # right edge and the whole drawer could be dragged sideways.
+            over = pg.evaluate("""(id) => {
+              const d = document.getElementById(id);
+              const w = d.getBoundingClientRect().width, out = [];
+              d.querySelectorAll('*').forEach(el => {
+                const cs = getComputedStyle(el);
+                if(cs.display === 'none') return;
+                const r = el.getBoundingClientRect();
+                if(r.width > w + 1) out.push((el.id ? '#'+el.id : el.tagName)
+                  + ' ' + Math.round(r.width) + 'px');
+              });
+              return {w: Math.round(w), out: out.slice(0, 4),
+                      scroll: d.scrollWidth > Math.ceil(w) + 1};
+            }""", dlg_id)
+            # The width check above cannot REPRODUCE the iOS case: the engine
+            # with the bug is WebKit and this is Chromium, whose date input
+            # shrinks perfectly well. A mutant that removed the fix passed it.
+            # So pin the fix itself. Weaker than measuring an outcome, and
+            # honest about which of the two this is.
+            if dlg_id == "pdlg":
+                dt = pg.evaluate("""() => {
+                  const i = document.getElementById('f-closing');
+                  const cs = getComputedStyle(i);
+                  return {app: cs.webkitAppearance || cs.appearance,
+                          minW: cs.minWidth};
+                }""")
+                if dt["app"] != "none" or dt["minW"] not in ("0px", "0"):
+                    fails.append(f"the closing-date field is back to appearance "
+                                 f"{dt['app']!r} / min-width {dt['minW']!r}, which "
+                                 f"is what let it run off the right of the sheet "
+                                 f"on iOS and drag the drawer sideways")
+            if over["out"] or over["scroll"]:
+                fails.append(f"#{dlg_id} is {over['w']}px wide but holds "
+                             f"{over['out'] or 'content'} and can be "
+                             f"dragged sideways")
             pg.evaluate("(id) => document.getElementById(id).close()", dlg_id)
             pg.wait_for_timeout(250)
+
+        # The count in the sheet and the count in the header answer the same
+        # question and must not disagree. They did, in half the combinations:
+        # the sheet had grown its own copy of the flag rules under its own
+        # names, and separately the page threw away an explicit "nothing here
+        # is rented" because it stripped zeros out of the link.
+        mismatches = []
+        for condo in (0, 1):
+            for buying in (0, 1):
+                for rented in (0, 1):
+                    pg.click("[data-open-setup]")
+                    pg.wait_for_timeout(220)
+                    for sel, want in (("#f-condo", condo), ("#f-buying", buying),
+                                      ("#f-rented", rented)):
+                        if pg.is_checked(sel) != bool(want):
+                            pg.click(sel)
+                    pg.fill("#f-closing", "2026-11-27")
+                    pg.wait_for_timeout(120)
+                    in_sheet = int(re.sub(r"\D", "", pg.inner_text("#f-count")))
+                    pg.click("#f-save")
+                    pg.wait_for_timeout(320)
+                    on_page = int(re.search(r"of (\d+)", pg.inner_text("#count")).group(1))
+                    if in_sheet != on_page:
+                        mismatches.append(f"condo={condo} buying={buying} "
+                                          f"rented={rented}: sheet {in_sheet}, "
+                                          f"page {on_page}")
+        if mismatches:
+            fails.append("the sheet and the header disagree on how many things "
+                         "are on the list: " + "; ".join(mismatches))
+        else:
+            notes.append("sheet count matches the page in all 8 combinations")
+        pg.goto(f"{base}/", wait_until="networkidle")
+        pg.wait_for_timeout(300)
+
+        blocks = pg.eval_on_selector_all(
+            ".det p, .card p, .lede, .plede, .sub, .handoff .screenonly, .ttl",
+            "els => els.map(e => e.innerText.trim())"
+        )
+        grade = reading_grade([b for b in blocks if len(b.split()) > 5])
+        if grade is None:
+            fails.append("could not read any prose to grade")
+        elif grade > 8.0:
+            fails.append(f"the writing reads at grade {grade:.1f}; the bar is a "
+                         f"twelve year old, about grade 7, and 8 is the line")
+        else:
+            notes.append(f"reading level: grade {grade:.1f}")
+
+        # The average is too blunt on its own: one impenetrable paragraph in
+        # eighty moves it by a tenth of a grade, so an aggregate gate cannot
+        # catch the thing it exists for. Check each block's own density too.
+        # The line is derived from what the writing actually measures, not from
+        # feel: across the 70 blocks of eight words or more the worst sits at
+        # 1.80 syllables per word and the median at 1.39, while a paragraph
+        # rewritten in officialese reads 2.63. So 2.0 is silent today and
+        # catches that with room to spare.
+        dense = []
+        for t in blocks:
+            ws = re.findall(r"[A-Za-z']+", t)
+            if len(ws) < 8:
+                continue
+            per = sum(_syllables(w) for w in ws) / len(ws)
+            if per > 2.0:
+                dense.append(f"{per:.2f}/word: {t[:60]}")
+        if dense:
+            fails.append("writing a seller could not follow: " + "; ".join(dense[:3]))
 
         pg.screenshot(path=str(SHOTS / "phone-top.png"))
         pg.evaluate("window.scrollTo(0, document.querySelector('.phase').offsetTop - 60)")

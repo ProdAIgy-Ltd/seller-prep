@@ -364,11 +364,10 @@ def page(agent, brokerage, n_items, css_url, js_url):
 <div class="hero">
 <div class="wrap">
 <div class="kick">Sold &middot; What happens next</div>
-<h1>Everything between sold and keys</h1>
+<h1>Everything to do between now and Closing Day</h1>
 <div class="rule"></div>
 <p class="lede"><span id="nitems">{n_items}</span> things, in the order they need
-doing, counted back from your closing date. The ones that cost real money if they
-are missed are marked.</p>
+doing, counted back from your closing date. The costly ones are highlighted.</p>
 <div class="stamp" id="stamp" hidden></div>
 </div>
 </div>
@@ -392,9 +391,9 @@ are missed are marked.</p>
 <div class="eyebrow">Start here</div>
 <h2>Three things go wrong more than everything else combined</h2>
 {render_headlines()}
-<p class="handoff"><span class="screenonly">Everything below is the list itself,
+<p class="handoff"><span class="screenonly">Everything you need to do is below,
 in the order it needs doing. Tick as you go; this device remembers where you got
-to.</span><span class="printonly">Everything below is the list itself, in the
+to.</span><span class="printonly">Everything you need to do is below, in the
 order it needs doing.</span></p>
 
 <div class="setup" id="setupcard">
@@ -420,10 +419,10 @@ order it needs doing.</span></p>
 <div class="wrap">
 {agent_block(agent, brokerage)}
 <div class="fine">
-<p><b>This is a general list, not advice about your deal.</b> Your agreement of
-purchase and sale, your lawyer and your lender decide what actually applies to
-you, and where any of them says something different from this page, they are
-right and this page is wrong. It is written for Ontario. Ask <span id="ask-who">{canon_name}</span>
+<p><b>This is a general list, not advice about your own deal.</b> Your sale
+agreement, your lawyer and your lender decide what really applies to you, and
+where any of them says something different from this page, they are right and
+this page is wrong. It is written for Ontario. Ask <span id="ask-who">{canon_name}</span>
 about anything here that does not look like your situation.</p>
 <p>Nothing you type on this page leaves your browser. There is no account, no
 tracking and no cookie; your details live in the link and your ticks live on
@@ -581,7 +580,10 @@ function build(){
   if(v('g-closing')) s.closing=v('g-closing');
   if(v('g-condo'))   s.condo=1;
   if(v('g-buying'))  s.buying=1;
-  if(v('g-rented'))  s.rented=1;
+  // Explicit either way: absent means TRUE for this one, so an agent who
+  // unticks it and sends the link would otherwise hand the client a list with
+  // the rented items still on it.
+  s.rented = v('g-rented') ? 1 : 0;
   if(Object.keys(s).length) frag.push('s='+b64e(s));
   var url=base+(frag.length?'#'+frag.join('&'):'');
   document.getElementById('out').textContent=url;
