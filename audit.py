@@ -15,6 +15,7 @@ actually shipped broken before:
 import http.server
 import json
 import pathlib
+import re
 import socketserver
 import sys
 import threading
@@ -239,7 +240,11 @@ def main():
         # colour. Only the distance between two of them is wrong.
         seam = pg.evaluate("""() => {
           const hero = document.querySelector('.hero');
-          const first = document.querySelector('main .eyebrow');
+          // The first VISIBLE one: the due-now band sits above it in the DOM
+          // and is hidden until there is a closing date, so a plain
+          // querySelector picks a zero-height element and measures nonsense.
+          const first = [...document.querySelectorAll('main .eyebrow')]
+            .find(e => e.getBoundingClientRect().height > 0);
           if(!hero || !first) return null;
           return Math.round(first.getBoundingClientRect().top
                             - hero.getBoundingClientRect().bottom);
@@ -251,6 +256,36 @@ def main():
                          f"colour change, so it reads as touching it")
         else:
             notes.append(f"hero seam: first line sits {seam}px clear of it")
+
+        # Every sheet's action has to be ON SCREEN when the sheet opens. The
+        # sheet body scrolls and the footer is pinned, which is the whole point
+        # of the layout, and one `overflow:visible` quietly undid it: the sheet
+        # painted past its own box and the only button slid off the bottom of
+        # the phone. Nothing else would have noticed. The button existed, was
+        # the right size, the right colour and perfectly reachable by keyboard.
+        for dlg_id, opener in (("pdlg", "[data-open-setup]"), ("kdlg", "#keep")):
+            pg.click(opener)
+            pg.wait_for_timeout(600)
+            r = pg.evaluate("""(id) => {
+              const d = document.getElementById(id);
+              if(!d || !d.open) return {err: 'did not open'};
+              const btn = d.querySelector('.sheet-foot button');
+              if(!btn) return {err: 'no action in the footer'};
+              const b = btn.getBoundingClientRect(), h = window.innerHeight;
+              return {bottom: Math.round(b.bottom), top: Math.round(b.top),
+                      vh: h, label: btn.textContent.trim()};
+            }""", dlg_id)
+            if r.get("err"):
+                fails.append(f"#{dlg_id}: {r['err']}")
+            elif r["bottom"] > r["vh"] + 1 or r["top"] < 0:
+                fails.append(f"#{dlg_id}: its action '{r['label']}' sits at "
+                             f"{r['top']}..{r['bottom']}px on a {r['vh']}px screen, "
+                             f"so it is off screen when the sheet opens")
+            else:
+                notes.append(f"#{dlg_id}: '{r['label']}' on screen at "
+                             f"{r['bottom']}px of {r['vh']}px")
+            pg.evaluate("(id) => document.getElementById(id).close()", dlg_id)
+            pg.wait_for_timeout(250)
 
         pg.screenshot(path=str(SHOTS / "phone-top.png"))
         pg.evaluate("window.scrollTo(0, document.querySelector('.phase').offsetTop - 60)")
@@ -317,6 +352,26 @@ def main():
         if before != after:
             fails.append(f"progress lost on reload: {before!r} then {after!r}")
         notes.append(f"progress survives reload: {after.strip()!r}")
+
+        # And survives the closing date MOVING, which is the case that actually
+        # happens: this list's own advice is that closings slip by a day fairly
+        # often. Ticks were keyed on a hash that included the closing date, so
+        # correcting it by one day silently threw away every tick the seller had
+        # made, with no way back. The reload check above could never see it,
+        # because on a reload the date has not changed.
+        moved = frag({"client": "The Patel family",
+                      "address": "118 Waverley Road, Toronto",
+                      "closing": "2026-11-28", "condo": 1, "buying": 1, "rented": 1}, "s")
+        pg2.goto(f"{base}/keith-godding#{moved}", wait_until="networkidle")
+        pg2.wait_for_timeout(400)
+        shifted = pg2.evaluate("document.getElementById('count').textContent")
+        done_before = int(re.search(r"\d+", after).group())
+        done_after = int(re.search(r"\d+", shifted).group())
+        if done_after < done_before:
+            fails.append(f"moving the closing date by one day threw away the "
+                         f"seller's ticks: {after.strip()!r} became {shifted.strip()!r}")
+        else:
+            notes.append(f"ticks survive the closing date moving: {shifted.strip()!r}")
 
         pg2.screenshot(path=str(SHOTS / "phone-personal.png"))
         ctx.close()

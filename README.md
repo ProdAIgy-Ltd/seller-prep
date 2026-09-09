@@ -230,6 +230,74 @@ carries them in a fold on the close. Claims verified during the build:
   covered by the principal residence exemption; not reporting runs to one
   hundred dollars a month up to eight thousand.
 
+### Serving the four in five who will not print it
+
+Saving is not the problem. Returning is. Paper works for the one in five not
+because it is saved but because it is physical and visible, and a ninety day
+list that gets opened once on day one is worth nothing whether or not it was
+saved. Only three things bring a person back over that span: a scheduled
+interruption they did not have to set up, a person prompting them, or seeing
+the thing incidentally. So the page does three things.
+
+**The calendar is the answer, and the page says so.** It is the only one of
+these that comes back and finds somebody without being remembered. Every
+reminder it writes now carries a link to that exact list, because an alert
+naming three things to do with no way to reach them leaves a person standing in
+their kitchen holding a notification.
+
+Two bugs sat under that, both found by exporting twice rather than once:
+
+- **The event UID contained the date**, so moving a closing date by a day wrote
+  eight brand new events instead of updating the eight already in the phone,
+  and the client ended up with two overlapping sets and no way to tell which
+  was live. Keyed on the list now, with `SEQUENCE` raised each export so a
+  calendar accepts the new dates as a revision.
+- **The tick store was keyed on a hash that included the closing date**, so
+  correcting that date by one day silently threw away every tick the seller had
+  made. On a list whose own advice is that closings slip by a day fairly often,
+  that is the worst defect in the thing. A list's identity is the home and the
+  household; the date is a fact about it. Ticks made under the old key, and
+  ticks made before any details were filled in, are carried across rather than
+  dropped.
+
+**Sending it to themselves** is second, through the phone's own share sheet.
+One tap, no instructions, and it works inside the Gmail or Instagram browser
+where Add to Home Screen does not exist. It lands in the thread or the inbox a
+person actually searches. Falls back to copying the link where `navigator.share`
+is missing.
+
+**The home screen and a PDF** sit under a fold, for the people who want them.
+
+### What is due this week
+
+Whatever brings somebody back has to land somewhere worth landing. A reminder
+that delivers a person to the same forty items they skimmed on day one gets
+them nothing. So the page opens on a band naming what they owe: what is past
+its date, what is due inside a week, and nothing at all if they are straight.
+Each row jumps to the item and flashes it, because a scroll that just moves the
+page leaves the reader hunting. Absent until there is a closing date, because
+without one nothing is due, and hidden in print, where it would be true on the
+day it was printed and wrong the week after.
+
+### The client's sheet
+
+One question carries the whole thing, so the sheet asks it: **when do you
+close?** It is first and it is the size of its importance, and the moment it is
+answered the sheet says what that bought, in full, before anybody commits to
+anything. The three questions that change what is on the list come next, as
+whole-row targets with the control on the right, and the count moves as they
+are ticked. A name and an address come last, because they change nothing but
+the title.
+
+It is a sheet from the bottom of the phone, where the thumb is, with the body
+scrolling under a pinned footer so the one button is always reachable. Two
+layout bugs hid there and neither was visible in the markup: `overflow:visible`
+let the sheet paint past its own box, and the flex column stopped at the
+`<form>` wrapper instead of carrying through it. Both put the only button off
+the bottom of the screen. `audit.py` now opens each sheet and measures where
+its action lands, because the button was present, correctly sized, correctly
+coloured and perfectly reachable by keyboard the whole time.
+
 ### Paper, and the seller who does not want paper
 
 A seller prints this and ticks it with a pen, so "it prints" is not the bar.

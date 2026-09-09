@@ -101,14 +101,45 @@ function applyFlags(){
 // Progress. Kept per seller so one realtor's device does not carry one client's
 // ticks onto the next client's list.
 // ---------------------------------------------------------------------------
-function storeKey(){
-  var seed=(S.address||'')+'|'+(S.closing||'')+'|'+(S.client||'');
+function hash(seed){
   var h=5381;
   for(var i=0;i<seed.length;i++) h=((h*33)^seed.charCodeAt(i))>>>0;
-  return 'sellerprep:'+h.toString(36);
+  return h.toString(36);
+}
+// WHICH LIST this is, which is the home and the household, NOT the closing
+// date. The date is a fact ABOUT the list, not its identity, and it moves:
+// this list's own advice is that closings slip by a day fairly often. The key
+// used to include it, so a seller who corrected their date by one day came
+// back to every tick gone and no way to get them back, and the calendar wrote
+// eight brand new events instead of updating the eight already in their phone.
+// With neither an address nor a name there is one list on the device, so the
+// seed is empty rather than falling back to the date.
+function listKey(){
+  var seed=(S.address||'')+'|'+(S.client||'');
+  return seed==='|' ? '0' : hash(seed);
+}
+function storeKey(){ return 'sellerprep:'+listKey(); }
+function legacyKey(){
+  return 'sellerprep:'+hash((S.address||'')+'|'+(S.closing||'')+'|'+(S.client||''));
 }
 function load(){
-  try{ return JSON.parse(localStorage.getItem(storeKey())||'{}')||{}; }
+  try{
+    var k=storeKey(), raw=localStorage.getItem(k);
+    if(raw) return JSON.parse(raw)||{};
+    // Carry ticks across rather than dropping them on the floor: from the old
+    // date-keyed entry, and from the anonymous list somebody ticked before they
+    // filled their details in. The anonymous one is MOVED, not copied, so a
+    // realtor's phone cannot hand one client's ticks to the next.
+    var from=localStorage.getItem(legacyKey()) ||
+             (listKey()!=='0' ? localStorage.getItem('sellerprep:0') : null);
+    if(from){
+      localStorage.setItem(k, from);
+      localStorage.removeItem(legacyKey());
+      if(listKey()!=='0') localStorage.removeItem('sellerprep:0');
+      return JSON.parse(from)||{};
+    }
+    return {};
+  }
   catch(e){ return {}; }   // private mode, cleared data, blocked storage
 }
 function save(o){
@@ -236,8 +267,23 @@ function buildICS(){
   var now=new Date(), stamp=icsDate(now)+'T'+
     String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+'00';
   var L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//THE AGENCY//Seller prep list//EN',
-         'CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+         'CALSCALE:GREGORIAN','METHOD:PUBLISH',
+         fold('X-WR-CALNAME:Selling'+(S.address?(' '+S.address):''))];
   var where=S.address? (' at '+S.address) : '';
+  // Every reminder carries the way back. A calendar alert that names three
+  // things to do and gives no way to reach the list is a dead end: the person
+  // is standing in their kitchen holding a notification. This link opens THEIR
+  // list, dates and ticks and all, because the whole of it rides in the URL.
+  var back = location.href;
+  // The UID must NOT contain the date. It used to, so moving a closing date by
+  // one day made eight brand new events instead of updating the eight already
+  // there, and the client ended up with two overlapping sets and no idea which
+  // was live. Key it on the phase and on which client's list this is, then
+  // raise SEQUENCE so a calendar accepts the new dates as a revision.
+  var key = listKey();
+  var seq = 0;
+  try{ seq = (parseInt(localStorage.getItem('sp-seq-'+key),10)||0) + 1;
+       localStorage.setItem('sp-seq-'+key, String(seq)); }catch(e){}
   document.querySelectorAll('.phase').forEach(function(ph,i){
     var raw=ph.dataset.offset;
     if(raw===''||raw==null) return;
@@ -247,12 +293,14 @@ function buildICS(){
     var items=[].slice.call(ph.querySelectorAll('li.item')).filter(function(l){return !l.hidden;});
     var body=items.map(function(l){ return '- '+l.querySelector('.ttl').textContent.trim(); }).join('\\n');
     L.push('BEGIN:VEVENT');
-    L.push('UID:sellerprep-'+i+'-'+icsDate(d)+'@theagency');
+    L.push('UID:sellerprep-'+i+'-'+key+'@theagency');
+    L.push('SEQUENCE:'+seq);
     L.push('DTSTAMP:'+stamp+'Z');
     L.push('DTSTART;VALUE=DATE:'+icsDate(d));
     L.push('DTEND;VALUE=DATE:'+icsDate(shift(d,1)));
     L.push(fold('SUMMARY:Selling'+where+': '+label));
-    L.push(fold('DESCRIPTION:'+body));
+    L.push(fold('DESCRIPTION:'+body+'\\n\\nOpen your list: '+back));
+    L.push(fold('URL:'+back));
     L.push('BEGIN:VALARM','TRIGGER:-PT9H','ACTION:DISPLAY',
            fold('DESCRIPTION:Selling'+where+': '+label),'END:VALARM');
     L.push('END:VEVENT');
@@ -264,6 +312,159 @@ function buildICS(){
 // ---------------------------------------------------------------------------
 // Wiring
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// What is due now
+// ---------------------------------------------------------------------------
+// The answer on a return visit. Somebody who lands here on day 40 because a
+// calendar reminder fired needs the few things they owe this week, not the
+// forty they already read on day one. Nothing to show without a closing date,
+// because without one nothing is due.
+var WEEK = 7;
+var CHEVRON = '<svg viewBox="0 0 10 6" fill="none" aria-hidden="true" '
+  + 'style="width:9px;height:9px"><path d="M1 1l4 4 4-4" stroke="currentColor" '
+  + 'stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+function openItems(){
+  var today=midnight(new Date()), late=[], soon=[], next=null;
+  document.querySelectorAll('.phase').forEach(function(ph){
+    if(ph.hidden) return;
+    var raw=ph.dataset.offset;
+    var d = (raw===''||raw==null) ? today : phaseDate(Number(raw));
+    if(!d) return;
+    d=midnight(d);
+    var days=Math.round((d-today)/86400000);
+    var items=[].slice.call(ph.querySelectorAll('li.item')).filter(function(li){
+      return !li.hidden && !DONE[li.dataset.id];
+    });
+    if(days<0){ late=late.concat(items); }
+    else if(days<=WEEK){ soon=soon.concat(items); }
+    else if(items.length && !next){ next={label:ph.querySelector('.when').textContent.trim(),
+                                          date:d, n:items.length}; }
+  });
+  return {late:late, soon:soon, next:next};
+}
+
+function paintNow(){
+  var band=document.getElementById('nowband');
+  if(!band) return;
+  if(!CLOSING){ band.hidden=true; return; }
+  band.hidden=false;
+  var o=openItems(), card=document.getElementById('nowcard');
+  var k=document.getElementById('now-k'), h=document.getElementById('now-h'),
+      sub=document.getElementById('now-sub'), list=document.getElementById('now-list'),
+      more=document.getElementById('now-more');
+  var show=o.late.concat(o.soon), lateN=o.late.length;
+  card.classList.toggle('clear', show.length===0);
+
+  if(show.length===0){
+    k.textContent='Up to date';
+    h.textContent = o.next ? 'Nothing to do until '+fmtShort(o.next.date)
+                           : 'That is the whole list done.';
+    sub.textContent = o.next
+      ? o.next.n+(o.next.n===1?' thing':' things')+' next, under '+o.next.label.toLowerCase()+'.'
+      : 'Every item is ticked.';
+    list.innerHTML=''; more.hidden=true;
+    return;
+  }
+  if(lateN){
+    k.textContent='Catch up';
+    h.textContent = lateN===1 ? 'One thing is past its date'
+                              : lateN+' things are past their date';
+    sub.textContent = o.soon.length
+      ? 'Another '+o.soon.length+(o.soon.length===1?' is':' are')+' due within the week.'
+      : 'Nothing else is due for a week.';
+  }else{
+    k.textContent='This week';
+    h.textContent = show.length+(show.length===1?' thing to do':' things to do');
+    sub.textContent = 'Everything else on the list is further out.';
+  }
+  var top=show.slice(0,5);
+  list.innerHTML = top.map(function(li,i){
+    return '<li><button class="nowgo'+(i<lateN?' late':'')+'" type="button" data-go="'
+      + esc(li.dataset.id) + '"><span class="dot"></span><span class="lbl">'
+      + esc(li.querySelector('.ttl').textContent.trim())
+      + '</span><span class="arw">' + CHEVRON + '</span></button></li>';
+  }).join('');
+  if(show.length>top.length){
+    more.hidden=false;
+    more.textContent = (show.length-top.length)+' more are further down the list.';
+  } else { more.hidden=true; }
+}
+
+function goToItem(id){
+  var li=[].slice.call(document.querySelectorAll('li.item')).filter(function(x){
+    return x.dataset.id===id;
+  })[0];
+  if(!li) return;
+  var det=li.querySelector('.det'), btn=li.querySelector('.more');
+  if(det && det.hidden && btn){ btn.click(); }
+  var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  li.scrollIntoView({behavior: reduce?'auto':'smooth', block:'center'});
+  li.classList.remove('flash');
+  void li.offsetWidth;
+  li.classList.add('flash');
+  setTimeout(function(){ li.classList.remove('flash'); }, 1700);
+}
+
+// ---------------------------------------------------------------------------
+// The sheet, and the echo inside it
+// ---------------------------------------------------------------------------
+// A modal <dialog> already traps focus and blocks the page behind it, but on
+// iOS the page under it still rubber-bands, which reads as the sheet coming
+// loose. Lock the body while one is open and put focus where the answer starts.
+function openSheet(dlg, opener){
+  if(!dlg) return;
+  dlg.__opener = opener || null;
+  document.body.style.overflow='hidden';
+  dlg.showModal();
+  var first=dlg.querySelector('input,button.pick');
+  if(first && !matchMedia('(hover:none)').matches) try{ first.focus(); }catch(e){}
+}
+document.addEventListener('close', function(e){
+  if(e.target && e.target.tagName==='DIALOG'){
+    document.body.style.overflow='';
+    var o=e.target.__opener;
+    if(o) try{ o.focus(); }catch(err){}
+  }
+}, true);
+
+// How many items a given set of answers actually leaves on the list, without
+// touching the page: the same flag rules applyFlags uses, counted on the side.
+function countFor(f){
+  var n=0;
+  document.querySelectorAll('li.item').forEach(function(li){
+    var flags=(li.dataset.flags||'').split(',').filter(Boolean);
+    var show=true;
+    flags.forEach(function(fl){ if(!f[fl]) show=false; });
+    if(show) n++;
+  });
+  return n;
+}
+
+function formEcho(){
+  var v=document.getElementById('f-closing'), out=document.getElementById('f-payoff'),
+      cnt=document.getElementById('f-count');
+  var d=v?parseYMD(v.value):null;
+  if(out){
+    if(!d){ out.textContent=''; }
+    else{
+      var n=Math.round((midnight(d)-midnight(new Date()))/86400000);
+      var when = n>1 ? n+' days away'
+               : n===1 ? 'tomorrow'
+               : n===0 ? 'today'
+               : (-n)+(n===-1?' day ago':' days ago');
+      out.innerHTML='<b>'+esc(fmt(d)+', '+d.getFullYear())+'</b>'+esc(when)
+        + (n>0 ? '. Every date below is counted back from it.' : '.');
+    }
+  }
+  if(cnt){
+    var f={condo:!!(document.getElementById('f-condo')||{}).checked,
+           buying:!!(document.getElementById('f-buying')||{}).checked,
+           rented:!!(document.getElementById('f-rented')||{}).checked};
+    cnt.innerHTML='Your list: <b>'+countFor(f)+' things</b>.';
+  }
+}
+
 function boot(){
   // The registry photograph is rendered by the build, so stampAgent's onerror
   // never sees it. Guard it here too: a face that will not decode has to
@@ -290,7 +491,7 @@ function boot(){
     box.addEventListener('change',function(){
       var li=box.closest('li.item');
       if(box.checked) DONE[li.dataset.id]=1; else delete DONE[li.dataset.id];
-      save(DONE); paint();
+      save(DONE); paint(); paintNow();
     });
   });
   // Tapping the title toggles too, which is a much bigger target than the box.
@@ -312,11 +513,21 @@ function boot(){
       document.getElementById('f-condo').checked = !!S.condo;
       document.getElementById('f-buying').checked= !!S.buying;
       document.getElementById('f-rented').checked= S.rented===undefined?true:!!S.rented;
-      dlg.showModal();
+      formEcho();
+      openSheet(dlg, b);
     });
   });
   document.querySelectorAll('[data-close-dlg]').forEach(function(b){
     b.addEventListener('click',function(){ b.closest('dialog').close(); });
+  });
+  // Show what the answers bought, while they are still being given. The date is
+  // the whole point of the sheet, so the line under it says the day in full,
+  // how far off it is, and what falls in the first week. The count under the
+  // three questions moves as they are ticked, so the effect of each one is
+  // visible rather than promised.
+  ['f-closing','f-condo','f-buying','f-rented'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){ el.addEventListener('input',formEcho); el.addEventListener('change',formEcho); }
   });
 
   var form=document.getElementById('pform');
@@ -336,13 +547,29 @@ function boot(){
     history.replaceState(null,'', location.pathname + (Object.keys(S).length? ('#'+keep+'s='+b64e(S)) : (keep?'#'+keep.slice(0,-1):'')));
     DONE=load();
     dlg.close();
+    var bandWasHidden = (document.getElementById('nowband')||{}).hidden;
     render();
+    // Show what just happened. Giving a closing date turns on the band at the
+    // top of the page, and a person who filled the sheet in from halfway down
+    // would otherwise close it, see nothing move, and have no idea it worked.
+    // Only on the transition: an edit later should leave them where they were.
+    var band=document.getElementById('nowband');
+    if(band && bandWasHidden && !band.hidden){
+      var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+      band.scrollIntoView({behavior: reduce?'auto':'smooth', block:'center'});
+    }
+  });
+
+  var nowlist=document.getElementById('now-list');
+  if(nowlist) nowlist.addEventListener('click',function(e){
+    var b=e.target.closest('[data-go]');
+    if(b) goToItem(b.getAttribute('data-go'));
   });
 
   var reset=document.getElementById('reset');
   if(reset) reset.addEventListener('click',function(){
     if(!confirm('Clear the ticks on this list? The dates and address stay.')) return;
-    DONE={}; save(DONE); paint();
+    DONE={}; save(DONE); paint(); paintNow();
   });
 
   document.querySelectorAll('[data-print]').forEach(function(b){
@@ -350,15 +577,36 @@ function boot(){
   });
 
   // ---- keeping it without paper -------------------------------------------
-  // The steps differ per phone and getting them wrong is worse than not
-  // offering them, so name the one they are holding. Deliberately NO web app
-  // manifest: on Android, Chrome installs a manifest's start_url, and this
-  // page's whole personalisation rides in the URL fragment, so an install
-  // would hand the client a blank list. Without one, "Add to Home screen" is
-  // a plain shortcut to the exact URL they are looking at, fragment and all.
+  // Four in five sellers will not print this, and a ninety day list that gets
+  // opened once is worth nothing. So this sheet takes a position instead of
+  // offering a menu: the calendar first, because it is the only one of these
+  // that comes back and finds them, then sending it to themselves, because a
+  // person's own messages thread is where they actually look.
   var kdlg=document.getElementById('kdlg');
   var keep=document.getElementById('keep');
   if(keep && kdlg) keep.addEventListener('click',function(){
+    var lede=document.getElementById('k-lede'),
+        calSub=document.getElementById('k-cal-sub');
+    if(CLOSING){
+      var n=Math.round((midnight(CLOSING)-midnight(new Date()))/86400000);
+      lede.textContent = n>0
+        ? 'You close in '+n+(n===1?' day':' days')+', and this list runs the whole '
+          + 'way. Put it somewhere that brings you back.'
+        : 'This list runs past closing. Put it somewhere that brings you back.';
+      calSub.textContent = 'Adds a reminder before each stage, each one carrying a '
+        + 'link back to this list. Nothing else to remember.';
+    }else{
+      lede.textContent = 'Closing is a long way off and this list runs the whole '
+        + 'way. Put it somewhere that brings you back.';
+      calSub.textContent = 'Add your closing date first and this writes a reminder '
+        + 'before each stage, each one carrying a link back to your list.';
+    }
+    // The steps differ per phone and getting them wrong is worse than not
+    // offering them, so name the one they are holding. Deliberately NO web app
+    // manifest: on Android, Chrome installs a manifest's start_url, and this
+    // page's whole personalisation rides in the URL fragment, so an install
+    // would hand the client a blank list. Without one, "Add to Home screen" is
+    // a plain shortcut to the exact URL they are looking at, fragment and all.
     var ua=navigator.userAgent||'';
     var ios=/iPad|iPhone|iPod/.test(ua) ||
             (/Macintosh/.test(ua) && navigator.maxTouchPoints>1);
@@ -368,23 +616,70 @@ function boot(){
          'Scroll down and tap <b>Add to Home Screen</b>, then tap <b>Add</b>.']
       : ['Tap the three dots at the top right of Chrome.',
          'Tap <b>Add to Home screen</b>, then tap <b>Add</b>.'];
-    steps.push('The list is now an icon on your phone. Open it any time and '
-               + 'your ticks are still there.');
+    steps.push('The list becomes an icon on your phone, and your ticks are '
+               + 'still on it when you open it.');
     document.getElementById('k-steps').innerHTML =
       steps.map(function(t){ return '<li>'+t+'</li>'; }).join('');
-    kdlg.showModal();
+    openSheet(kdlg, keep);
   });
 
-  var cal=document.getElementById('cal')||document.getElementById('k-cal');
+  // Sending it to themselves. One tap into the share sheet they already know,
+  // which works in an in-app browser where Add to Home Screen does not, and
+  // lands the link in the thread or the inbox they will actually search.
+  var share=document.getElementById('k-share');
+  if(share) share.addEventListener('click',function(){
+    var sub=document.getElementById('k-share-sub');
+    var title=document.title;
+    var text=(S.address? ('Selling '+S.address+'. ') : '')
+             + 'Everything between sold and keys, in order.';
+    if(navigator.share){
+      navigator.share({title:title, text:text, url:location.href})
+        .then(function(){ sub.textContent='Sent. It is in whichever app you picked.'; })
+        .catch(function(){});
+      return;
+    }
+    copyLink(function(ok){
+      sub.textContent = ok
+        ? 'Link copied. Paste it into a message to yourself and it is saved.'
+        : 'Copy the address from your browser bar and send it to yourself.';
+    });
+  });
+
+  function copyLink(done){
+    var url=location.href;
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(url).then(function(){done(true);},fallback);
+    } else fallback();
+    function fallback(){
+      var t=document.createElement('textarea');
+      t.value=url; t.style.position='fixed'; t.style.opacity='0';
+      document.body.appendChild(t); t.select();
+      var ok=false;
+      try{ ok=document.execCommand('copy'); }catch(e){}
+      t.remove(); done(ok);
+    }
+  }
+
+  var cal=document.getElementById('k-cal');
   if(cal) cal.addEventListener('click',function(){
     var t=buildICS();
-    if(!t){ alert('Add your closing date first and the dates become real.'); return; }
+    if(!t){
+      // No dead ends. A person who taps the calendar without a closing date
+      // gets taken to the one question that unlocks it, not an alert telling
+      // them off.
+      kdlg.close();
+      var opener=document.querySelector('[data-open-setup]');
+      if(opener) opener.click();
+      return;
+    }
     var blob=new Blob([t],{type:'text/calendar;charset=utf-8'});
     var a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download='seller-prep.ics';
+    a.download='selling-'+(S.address? S.address.replace(/[^a-z0-9]+/gi,'-').toLowerCase().slice(0,40) : 'prep-list')+'.ics';
     document.body.appendChild(a); a.click();
     setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },0);
+    document.getElementById('k-cal-sub').textContent =
+      'Downloaded. Open the file and your calendar offers to add them all.';
   });
 
   window.addEventListener('hashchange',function(){
@@ -401,6 +696,7 @@ function render(){
   stampDates();
   stampAgent();
   paint();
+  paintNow();
   var setup=document.getElementById('setupcard');
   if(setup){
     var personal = !!(S.address||S.closing||S.client);
@@ -408,8 +704,13 @@ function render(){
     var h=document.getElementById('setup-h'), p=document.getElementById('setup-p'),
         b=document.getElementById('setup-b');
     if(personal){
+      // The right prompt at the right moment. Somebody who has just given their
+      // closing date is exactly the person who should be told to put the list
+      // where it will find them again, and this is the one second they are
+      // paying attention to this card.
       h.textContent='These dates are yours.';
-      p.textContent='Counted back from your closing date. Change anything if it moves.';
+      p.textContent='Counted back from your closing date, and safe if it moves. '
+        + 'Now put the list somewhere that brings you back to it.';
       b.textContent='Edit';
     }else{
       h.textContent='Add your closing date.';

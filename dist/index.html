@@ -20,7 +20,7 @@
 <meta name="theme-color" content="#ED2127">
 <link rel="preload" as="font" type="font/woff2" href="/a/fonts/flama-bold.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/a/fonts/din-reg.woff2" crossorigin>
-<link rel="stylesheet" href="/a/app.75fecd1698.css">
+<link rel="stylesheet" href="/a/app.9a04b737f4.css">
 </head>
 <body>
 
@@ -48,6 +48,20 @@ are missed are marked.</p>
 </div>
 
 <main>
+<!-- What is due now. Hidden until there is a closing date, because without one
+     nothing is due. On a return visit this IS the page: somebody who came back
+     because a reminder fired needs the three things they owe this week, not the
+     forty they already skimmed on day one. -->
+<section class="wrap now" id="nowband" hidden>
+<div class="nowcard" id="nowcard">
+<div class="eyebrow" id="now-k"></div>
+<h2 class="nowh" id="now-h"></h2>
+<p class="nowsub" id="now-sub"></p>
+<ul class="nowlist" id="now-list"></ul>
+<p class="nowmore" id="now-more" hidden></p>
+</div>
+</section>
+
 <section class="wrap">
 <div class="eyebrow">Start here</div>
 <h2>Three things go wrong more than everything else combined</h2>
@@ -62,7 +76,7 @@ order it needs doing.</span></p>
 <p id="setup-p"></p>
 <div class="btnrow">
 <button class="btn" type="button" data-open-setup><span id="setup-b">Add my details</span></button>
-<button class="btn ghost" type="button" id="keep">Keep it on my phone</button>
+<button class="btn ghost" type="button" id="keep">Keep it</button>
 <button class="btn ghost" type="button" data-print>Print</button>
 </div>
 </div>
@@ -505,55 +519,91 @@ this device only.</p>
 </footer>
 
 <dialog id="pdlg" aria-labelledby="dlgh">
-<form method="dialog"></form>
-<div class="dlg">
-<h3 id="dlgh">Make this list yours</h3>
-<p>This stays in your browser. Nothing is sent anywhere and no account is needed.</p>
-<form class="pf two" id="pform">
-<div class="fld full"><label for="f-client">Your name, or the household</label>
-<input type="text" id="f-client" placeholder="The Patel family" autocomplete="off"></div>
-<div class="fld full"><label for="f-address">The home you are selling</label>
+<div class="sheet">
+<div class="grab"></div>
+<button class="x" type="button" data-close-dlg aria-label="Close"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+<form id="pform">
+<div class="sheet-head">
+<h3 id="dlgh">When do you close?</h3>
+<p>Every date on this list is counted back from that one day. It stays in this
+browser: nothing is sent anywhere and there is no account.</p>
+</div>
+<div class="sheet-body">
+<div class="bigfield">
+<label for="f-closing">Closing date</label>
+<input type="date" id="f-closing" enterkeyhint="done">
+<p class="payoff" id="f-payoff" role="status" aria-live="polite"></p>
+</div>
+
+<fieldset class="qs">
+<legend>Three things that change the list</legend>
+<label class="q"><span class="qt"><b>It is a condominium</b>
+<i>Adds booking the elevator and the building&rsquo;s moving rules</i></span>
+<input type="checkbox" id="f-condo"></label>
+<label class="q"><span class="qt"><b>I am buying another home at the same time</b>
+<i>Adds lining the two closing dates up</i></span>
+<input type="checkbox" id="f-buying"></label>
+<label class="q"><span class="qt"><b>Something here is rented</b>
+<i>The water heater, the furnace, the softener. Adds paying it out or handing it over</i></span>
+<input type="checkbox" id="f-rented" checked></label>
+<div class="count-line" id="f-count"></div>
+</fieldset>
+
+<div class="named">
+<div class="fld"><label for="f-client">Whose list is this?</label>
+<input type="text" id="f-client" placeholder="The Patel family" autocomplete="off">
+<div class="hint">Only used to title the page.</div></div>
+<div class="fld"><label for="f-address">The home you are selling</label>
 <input type="text" id="f-address" placeholder="118 Waverley Road, Toronto" autocomplete="off"></div>
-<div class="fld full"><label for="f-closing">Closing date</label>
-<input type="date" id="f-closing">
-<div class="hint">Every date on the list is counted back from this.</div></div>
-<div class="fld full"><div class="checks">
-<label class="chk"><input type="checkbox" id="f-condo">
-<span>It is a condominium<i>Adds the elevator booking and the building's moving rules.</i></span></label>
-<label class="chk"><input type="checkbox" id="f-buying">
-<span>I am buying another home at the same time<i>Adds lining the two closing dates up.</i></span></label>
-<label class="chk"><input type="checkbox" id="f-rented" checked>
-<span>Something here is rented, like the water heater<i>Adds paying it out or handing it over.</i></span></label>
-</div></div>
-<div class="btnrow full">
-<button class="btn red" type="submit">Save</button>
-<button class="btn ghost" type="button" data-close-dlg>Cancel</button>
+</div>
+</div>
+<div class="sheet-foot">
+<button class="btn red wide" type="submit" id="f-save">Make this list mine</button>
 </div>
 </form>
 </div></dialog>
 
-<!-- Keeping it without paper. A seller who does not want a printout still wants
-     the list somewhere they will find it again, and "bookmark it" is not an
-     answer anybody follows. The home screen is: it becomes an icon beside their
-     other apps, it opens straight back to their own list, and the ticks are
-     already on the device. So this dialog takes a position and leads with that,
-     with the two steps for the phone they are actually holding. The PDF and the
-     calendar follow as the other two things a person might want. -->
+<!-- Keeping it without paper. Four in five sellers will not print this, and a
+     list for the next ninety days that gets opened once is worth nothing. So
+     this sheet is not a menu: it takes a position. The calendar is the answer,
+     because it is the only one of these that comes back and finds them without
+     being remembered, and every reminder it writes carries a link to this exact
+     list. Sending it to themselves is second, because a person's own messages
+     thread is where they actually look for things. The home screen and a PDF
+     are underneath, for the people who want them. -->
 <dialog id="kdlg" aria-labelledby="kdlgh">
-<form method="dialog"></form>
-<div class="dlg">
-<h3 id="kdlgh">Keep this on your phone</h3>
-<p>No paper needed. Put it on your home screen and it opens like an app, with
-your own dates and your ticks already on it.</p>
+<div class="sheet">
+<div class="grab"></div>
+<button class="x" type="button" data-close-dlg aria-label="Close"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+<div class="sheet-head">
+<h3 id="kdlgh">Keep this where it will find you</h3>
+<p id="k-lede">Closing is a long way off and this list runs the whole way. Put it
+somewhere that brings you back.</p>
+</div>
+<div class="sheet-body">
+<button class="pick lead" type="button" id="k-cal">
+<span class="flag">Best</span>
+<b>Put the dates in my calendar</b>
+<span id="k-cal-sub">Adds a reminder before each stage, each one carrying a link
+back to this list. Nothing else to remember.</span></button>
+
+<button class="pick" type="button" id="k-share">
+<b>Send this list to myself</b>
+<span id="k-share-sub">Opens your usual share sheet, so it lands in your messages
+or your inbox where you can find it again.</span></button>
+
+<details class="fold">
+<summary>Other ways to keep it</summary>
 <ol class="steps" id="k-steps"></ol>
-<p class="hint" id="k-other">Prefer a file? Choose <b>Print</b> and then
-<b>Save as PDF</b> instead. A PDF is a snapshot, so ticks made after you save it
-will not show up in it.</p>
-<div class="btnrow full">
-<button class="btn red" type="button" id="k-cal">Put the dates in my calendar</button>
-<button class="btn ghost" type="button" data-close-dlg>Close</button>
+<p class="hint" style="margin-top:14px">For a file instead, choose
+<b>Print</b> and then <b>Save as PDF</b>. A PDF is a snapshot, so ticks you make
+after saving it will not show up in it.</p>
+</details>
+</div>
+<div class="sheet-foot">
+<button class="btn ghost wide" type="button" data-close-dlg>Done</button>
 </div>
 </div></dialog>
-<script src="/a/app.20465a56dd.js" defer></script>
+<script src="/a/app.0f0771ba00.js" defer></script>
 </body>
 </html>

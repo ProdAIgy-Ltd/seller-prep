@@ -81,7 +81,16 @@ h1{
 /* the personalised stamp */
 .stamp{
   margin-top:26px;border-top:1px solid #2a2825;padding-top:20px;
-  display:flex;flex-wrap:wrap;gap:10px 30px;align-items:flex-end;
+  display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;align-items:end;
+}
+/* Three fields and a countdown in one wrapping flex row left the countdown
+   floating between two lines on a phone, which read as a mistake. A grid puts
+   each field in a cell and gives the countdown the end of the last row. */
+.stamp .f{grid-column:span 1}
+.stamp .f:nth-child(3){grid-column:1/2}
+@media(min-width:620px){
+  .stamp{grid-template-columns:repeat(3,auto) 1fr;gap:10px 34px}
+  .stamp .f:nth-child(3){grid-column:auto}
 }
 .stamp .f{min-width:0}
 .stamp .k{
@@ -90,8 +99,8 @@ h1{
 }
 .stamp .v{font-family:var(--disp);font-size:19px;line-height:1.25;margin-top:4px;color:#fff}
 .days{
-  margin-left:auto;background:var(--red);color:#fff;border-radius:10px;
-  padding:9px 15px;text-align:center;flex:none;
+  justify-self:end;align-self:end;background:var(--red);color:#fff;border-radius:10px;
+  padding:9px 15px;text-align:center;
 }
 .days b{display:block;font-family:var(--head);font-size:31px;line-height:1;font-weight:700}
 .days span{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;opacity:.9}
@@ -115,6 +124,44 @@ h2{
   line-height:1.14;margin-top:10px;letter-spacing:-.005em;
 }
 .sub{color:var(--grey);margin-top:11px;max-width:38em;font-size:15.5px}
+
+/* ---------- what is due now ----------
+   The answer, on a return visit. A reminder that lands somebody back here on
+   day 40 has to open on what they owe THIS WEEK, not on the same wall of forty
+   items they already skimmed on day 1. Absent until there is a closing date,
+   because without one there is no such thing as due. */
+.now{padding-bottom:0!important}
+.nowcard{
+  background:var(--canvas);border:1px solid var(--line);border-left:3px solid var(--red);
+  border-radius:var(--r);padding:20px 22px 12px;
+}
+.nowcard.clear{border-left-color:var(--line2)}
+.nowh{font-family:var(--disp);font-weight:500;font-size:22px;line-height:1.2;
+  margin-top:7px;letter-spacing:0}
+.nowsub{font-size:14px;color:var(--grey);margin-top:7px}
+.nowlist{list-style:none;margin:14px 0 0;display:grid;gap:0}
+.nowlist li{border-top:1px solid var(--line)}
+.nowgo{
+  display:flex;align-items:center;gap:11px;width:100%;min-height:48px;padding:11px 0;
+  background:none;border:0;cursor:pointer;text-align:left;font-family:var(--body);
+  font-size:15px;line-height:1.35;color:var(--ink);
+}
+.nowgo:hover{color:var(--red)}
+.nowgo .dot{
+  flex:none;width:17px;height:17px;border:1.5px solid var(--line2);border-radius:50%;
+}
+.nowgo.late .dot{border-color:var(--red);background:#fdeced}
+.nowgo .lbl{flex:1;min-width:0}
+.nowgo .arw{flex:none;width:9px;height:9px;color:var(--mute);transform:rotate(-90deg)}
+.nowmore{
+  font-size:12.5px;color:var(--grey);padding:12px 0 0;border-top:1px solid var(--line);
+  margin-top:0;
+}
+/* Landing on an item from the band has to say WHICH item, or the scroll just
+   moves the page and the reader hunts. */
+@keyframes flash{0%,100%{background:var(--canvas)}18%{background:#fdeced}}
+li.item.flash{animation:flash 1.5s var(--ease)}
+@media(prefers-reduced-motion:reduce){li.item.flash{animation:none;border-color:var(--red)}}
 
 /* ---------- the three that go wrong ---------- */
 .cards{display:grid;gap:12px;margin-top:26px}
@@ -291,12 +338,153 @@ footer .wrap{padding-top:clamp(34px,7vw,56px);padding-bottom:clamp(30px,6vw,46px
 .srcs a{color:#7d766e;font-size:12px;text-decoration:none;border-bottom:1px solid #262421}
 .srcs a:hover{color:#cfc9c2}
 
-/* ---------- dialog ---------- */
+/* ---------- sheets ----------
+   On a phone this is a sheet that comes up from the bottom, which is where a
+   phone asks for something, and it is where the thumb already is. On a wider
+   screen it settles into a centred card. Same markup, one breakpoint.
+
+   The footer is pinned and the body scrolls, so the one button a person needs
+   is on screen whatever the keyboard does and however long the sheet gets. */
 dialog{
-  border:0;border-radius:16px;padding:0;max-width:520px;width:calc(100% - 28px);
-  background:var(--canvas);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.3);
+  border:0;padding:0;background:var(--canvas);color:var(--ink);
+  width:100%;max-width:none;margin:auto auto 0;
+  border-radius:22px 22px 0 0;box-shadow:0 -8px 60px rgba(0,0,0,.34);
+  /* hidden, not visible: with overflow visible the sheet paints past its own
+     box, the flex column stops constraining, and the pinned footer carrying
+     the one button a person needs slides off the bottom of the screen. */
+  max-height:92dvh;overflow:hidden;
 }
-dialog::backdrop{background:rgba(12,12,12,.55);backdrop-filter:blur(3px)}
+@media(min-width:620px){
+  dialog{margin:auto;max-width:540px;border-radius:20px;
+         box-shadow:0 24px 70px rgba(0,0,0,.3);max-height:88dvh}
+}
+dialog::backdrop{background:rgba(12,12,12,.5);backdrop-filter:blur(4px)}
+@keyframes sheetin{from{transform:translateY(14px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+dialog[open]{animation:sheetup .44s var(--ease)}
+dialog[open]::backdrop{animation:fadein .3s ease}
+@media(min-width:620px){dialog[open]{animation:sheetin .4s var(--ease)}}
+
+.sheet{display:flex;flex-direction:column;max-height:inherit;position:relative}
+/* One sheet wraps its head, body and footer in a <form> so Enter submits. That
+   form is then the ONLY flex child of .sheet, so the pinned-footer layout has
+   to carry through it or the footer is just normal flow inside an unconstrained
+   box and slides off the bottom. The other sheet has no form, which is why only
+   one of the two ever broke. */
+.sheet>form{display:flex;flex-direction:column;flex:1;min-height:0}
+.grab{
+  width:38px;height:5px;border-radius:3px;background:var(--line2);
+  margin:9px auto 0;flex:none;
+}
+@media(min-width:620px){.grab{display:none}}
+.sheet-head{padding:16px 20px 0;flex:none}
+@media(min-width:620px){.sheet-head{padding-top:24px}}
+.sheet-head h3{font-family:var(--disp);font-weight:500;font-size:25px;line-height:1.15;
+  padding-right:48px}
+.sheet-head p{font-size:14.5px;color:var(--grey);margin-top:8px;line-height:1.5}
+.x{
+  position:absolute;top:12px;right:12px;width:44px;height:44px;z-index:2;
+  display:grid;place-items:center;border:0;border-radius:50%;cursor:pointer;
+  background:#efece7;color:var(--grey);
+  transition:background .3s var(--ease),color .3s var(--ease);
+}
+@media(min-width:620px){.x{top:16px;right:16px}}
+.x:hover{background:var(--line2);color:var(--ink)}
+.x svg{width:13px;height:13px;display:block}
+/* min-height:0 is load-bearing. A flex item's automatic minimum size is its
+   CONTENT size, so `flex:1` alone will not let this shrink: the body keeps its
+   full height, the footer is pushed past the bottom of the sheet, and
+   overflow:hidden then clips the only button away rather than showing it. */
+.sheet-body{overflow-y:auto;overscroll-behavior:contain;padding:4px 20px 20px;
+  flex:1;min-height:0}
+.sheet-foot{
+  flex:none;padding:13px 20px;border-top:1px solid var(--line);background:var(--canvas);
+  padding-bottom:calc(13px + env(safe-area-inset-bottom));
+}
+.btn.wide{width:100%;justify-content:center}
+
+/* The one field that matters. Everything on the list is counted back from it,
+   so it is the size of its importance and it is the first thing in the sheet. */
+.bigfield{margin-top:20px}
+.bigfield label{
+  display:block;font-size:10px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--grey);margin-bottom:8px;
+}
+.bigfield input{
+  width:100%;min-height:56px;padding:12px 15px;border:1.5px solid var(--line2);
+  border-radius:12px;font-family:var(--body);font-size:17px;color:var(--ink);
+  background:var(--canvas);transition:border-color .3s var(--ease);
+}
+.bigfield input:focus{border-color:var(--ink);outline:none}
+/* The payoff. A person types a date and sees, before they commit to anything,
+   exactly what it bought them. Empty until there is something true to say, so
+   it never occupies space with a placeholder. */
+.payoff{margin-top:11px;font-size:14px;line-height:1.5;color:var(--grey)}
+.payoff:empty{display:none}
+.payoff b{display:block;font-family:var(--disp);font-size:18px;color:var(--ink);
+  font-weight:500;margin-bottom:3px}
+
+/* The three questions that change what is on the list. Whole-row targets with
+   the control on the right, the way a phone presents a choice, rather than a
+   column of boxes on the left the way a form does. */
+.qs{border:0;margin-top:26px}
+.qs legend{
+  font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--grey);margin-bottom:4px;padding:0;
+}
+.q{
+  display:flex;align-items:center;gap:14px;min-height:60px;padding:12px 0;
+  border-bottom:1px solid var(--line);cursor:pointer;
+}
+.q:last-of-type{border-bottom:0}
+.q .qt{flex:1;min-width:0}
+.q .qt b{display:block;font-size:15.5px;font-weight:700;line-height:1.35}
+.q .qt i{display:block;font-style:normal;font-size:13px;color:var(--mute);
+  line-height:1.45;margin-top:3px}
+.q input{
+  appearance:none;-webkit-appearance:none;flex:none;width:26px;height:26px;
+  border:1.5px solid var(--line2);border-radius:50%;cursor:pointer;margin:0;
+  background:var(--canvas);position:relative;
+  transition:background .25s var(--ease),border-color .25s var(--ease);
+}
+.q input:checked{background:var(--red);border-color:var(--red)}
+.q input:checked:after{
+  content:'';position:absolute;left:8px;top:4px;width:6px;height:12px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(43deg);
+}
+.count-line{
+  margin-top:16px;font-size:13.5px;color:var(--grey);
+  padding-top:14px;border-top:1px solid var(--line);
+}
+.count-line b{color:var(--ink);font-weight:700}
+
+/* Name and address come last because they change nothing but the title. */
+.named{margin-top:24px;display:grid;gap:13px}
+.named .fld label{margin-bottom:6px}
+
+/* ---------- the keep-it sheet ---------- */
+.pick{
+  display:block;width:100%;text-align:left;background:var(--canvas);
+  border:1.5px solid var(--line2);border-radius:13px;padding:16px 17px;
+  cursor:pointer;font-family:var(--body);color:var(--ink);margin-top:11px;
+  transition:border-color .3s var(--ease);
+}
+.pick:hover{border-color:var(--ink)}
+.pick.lead{border-color:var(--ink);border-width:2px}
+.pick b{display:block;font-size:16px;font-weight:700;line-height:1.3}
+.pick span{display:block;font-size:13.5px;color:var(--grey);margin-top:5px;line-height:1.5}
+.pick .flag{
+  display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--red);background:#fdeced;border-radius:5px;
+  padding:3px 7px;margin-bottom:8px;
+}
+.fold{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.fold summary{
+  cursor:pointer;font-size:10.5px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--grey);min-height:24px;
+}
+.fold summary:hover{color:var(--ink)}
 .dlg{padding:24px}
 .dlg h3{font-family:var(--disp);font-weight:500;font-size:23px;line-height:1.2}
 .dlg>p{font-size:14.5px;color:var(--grey);margin-top:8px}
@@ -340,7 +528,10 @@ dialog::backdrop{background:rgba(12,12,12,.55);backdrop-filter:blur(3px)}
 @media print{
   @page{margin:14mm 12mm}
   body{background:#fff;font-size:10.5pt}
-  .bar,.prog,.setup,.btnrow,.more,dialog,.days,.pdone,.iconbtn{display:none!important}
+  /* The due-now band is a screen affordance for a return visit. On paper it is
+     both noise and a lie: it is true on the day it was printed and wrong the
+     week after, and the printout is the full reference anyway. */
+  .bar,.prog,.setup,.btnrow,.more,dialog,.days,.pdone,.iconbtn,.now{display:none!important}
   .hero{background:#fff;color:var(--ink);padding:0 0 14pt;border-bottom:2px solid var(--iron)}
   .lede{color:var(--grey)}
   .stamp{border-top-color:var(--line2)}
