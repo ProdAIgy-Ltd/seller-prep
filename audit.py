@@ -230,6 +230,28 @@ def main():
             fails.append(f"[hidden] elements still rendering: {leaked}")
         notes.append("every [hidden] element really is display:none")
 
+        # The seam between the hero and the first section. `.wrap` sets
+        # `padding:0 var(--pad)`, and a class beats an element selector, so
+        # every `<section class="wrap">` silently lost the vertical padding
+        # that `section` gives it and the first eyebrow landed ON the colour
+        # change, red text touching black. Nothing else here would notice:
+        # every element is present, visible, correctly sized and the right
+        # colour. Only the distance between two of them is wrong.
+        seam = pg.evaluate("""() => {
+          const hero = document.querySelector('.hero');
+          const first = document.querySelector('main .eyebrow');
+          if(!hero || !first) return null;
+          return Math.round(first.getBoundingClientRect().top
+                            - hero.getBoundingClientRect().bottom);
+        }""")
+        if seam is None:
+            fails.append("could not find the hero or the first section heading")
+        elif seam < 24:
+            fails.append(f"the first line after the hero sits {seam}px below the "
+                         f"colour change, so it reads as touching it")
+        else:
+            notes.append(f"hero seam: first line sits {seam}px clear of it")
+
         pg.screenshot(path=str(SHOTS / "phone-top.png"))
         pg.evaluate("window.scrollTo(0, document.querySelector('.phase').offsetTop - 60)")
         pg.wait_for_timeout(400)

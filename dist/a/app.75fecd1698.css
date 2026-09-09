@@ -98,6 +98,14 @@ h1{
 
 /* ---------- generic blocks ---------- */
 section{padding:clamp(34px,7vw,58px) 0}
+/* Almost every section on this page is <section class="wrap">, and .wrap sets
+   `padding:0 var(--pad)`, which wipes the vertical padding above: a class beats
+   an element selector whatever order they are in. So those sections had NO top
+   or bottom padding, and the first eyebrow landed exactly on the seam with the
+   hero, red text touching black. `footer .wrap` had already been given its
+   padding back by hand, which was the tell that this had been met before and
+   patched at the symptom. Fix it on the pairing instead. */
+section.wrap{padding-top:clamp(34px,7vw,58px);padding-bottom:clamp(34px,7vw,58px)}
 .eyebrow{
   font-size:10px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;
   color:var(--red);
