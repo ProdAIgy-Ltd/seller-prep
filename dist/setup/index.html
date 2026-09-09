@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Make a seller's prep link</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/a/favicon.png" type="image/png">
+<link rel="stylesheet" href="/a/app.98a0da9f8e.css">
+<style>
+.pf{max-width:none}
+select{width:100%;min-height:44px;padding:10px 13px;border:1px solid var(--line2);
+border-radius:9px;font-family:var(--body);font-size:16px;background:var(--canvas);color:var(--ink)}
+.step{border-top:1px solid var(--line2);padding-top:26px;margin-top:30px}
+.step:first-of-type{border-top:0;margin-top:18px;padding-top:0}
+.stepn{font-size:10px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--red)}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap">
+<img src="/a/ta-mark-red.png" alt="" width="26" height="26">
+<span class="nm">Link builder</span></div></header>
+
+<div class="hero"><div class="wrap">
+<div class="kick">For realtors</div>
+<h1>Make a link</h1>
+<div class="rule"></div>
+<p class="lede">Put your name on the list, and your client's details in it. Takes
+about a minute and needs nobody's permission.</p>
+</div></div>
+
+<main><section class="wrap">
+
+<div class="step">
+<div class="stepn">Step one</div>
+<h2>Who is sending it</h2>
+<p class="sub">Pick a name already set up, or type your own. Typing your own
+works straight away; it travels in the link rather than needing anything
+published.</p>
+<form class="pf two" id="agf" onsubmit="return false">
+<div class="fld full"><label for="g-pick">Already set up</label>
+<select id="g-pick"><option value="">Type my own details instead</option>
+<option value="__none__">No name, brokerage only</option><option value="keith-godding">Keith Godding</option></select></div>
+<div class="fld"><label for="g-name">Your name</label>
+<input type="text" id="g-name" autocomplete="name"></div>
+<div class="fld"><label for="g-title">Title</label>
+<input type="text" id="g-title" placeholder="Realtor" autocomplete="off"></div>
+<div class="fld"><label for="g-phone">Phone</label>
+<input type="tel" id="g-phone" autocomplete="tel"></div>
+<div class="fld"><label for="g-email">Email</label>
+<input type="email" id="g-email" autocomplete="email"></div>
+<div class="fld"><label for="g-site">Website</label>
+<input type="text" id="g-site" placeholder="firstaccesshomes.com"></div>
+<div class="fld"><label for="g-tag">One line under your name</label>
+<input type="text" id="g-tag" placeholder="Toronto and the GTA"></div>
+<div class="fld full"><label for="g-photo">Headshot address, if you have one online</label>
+<input type="text" id="g-photo" placeholder="https://...jpg">
+<div class="hint">Leave this empty and the close simply has no photograph.</div></div>
+</form>
+</div>
+
+<div class="step">
+<div class="stepn">Step two, optional</div>
+<h2>Who it is for</h2>
+<p class="sub">Fill this in and the list arrives with their dates already on it.
+Leave it empty and they fill it in themselves on the page, which works just as
+well.</p>
+<form class="pf two" id="clf" onsubmit="return false">
+<div class="fld"><label for="g-client">Client or household</label>
+<input type="text" id="g-client" placeholder="The Patel family"></div>
+<div class="fld"><label for="g-closing">Closing date</label>
+<input type="date" id="g-closing"></div>
+<div class="fld full"><label for="g-address">The home</label>
+<input type="text" id="g-address" placeholder="118 Waverley Road, Toronto"></div>
+<div class="fld full"><div class="checks">
+<label class="chk"><input type="checkbox" id="g-condo"><span>It is a condominium</span></label>
+<label class="chk"><input type="checkbox" id="g-buying"><span>They are buying at the same time</span></label>
+<label class="chk"><input type="checkbox" id="g-rented" checked><span>Something is rented, like the water heater</span></label>
+</div></div>
+</form>
+</div>
+
+<div class="step">
+<div class="stepn">Step three</div>
+<h2>Take the link</h2>
+<div class="out" id="out">Fill something in above.</div>
+<div class="btnrow">
+<button class="btn red" type="button" id="copy">Copy link</button>
+<a class="btn ghost" id="open" href="/" target="_blank" rel="noopener">Open it</a>
+</div>
+<div class="ok" id="ok"></div>
+<p class="sub" style="margin-top:22px">The client's details sit after the # in
+that link, which browsers keep to themselves: it is never sent to the server and
+never appears in a log. Send it however you would send anything else.</p>
+</div>
+
+</section></main>
+
+<footer><div class="wrap">
+<div class="fine">
+<p>Adding your name here permanently, so it lives at a tidy address of its own
+rather than in a long link, is one line in <b>agents.json</b> and a push.</p>
+<p>&copy; THE AGENCY, Brokerage.</p>
+</div>
+</div></footer>
+
+<script src="/a/setup.389c95867a.js" defer></script>
+</body></html>

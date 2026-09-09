@@ -1,0 +1,42 @@
+{
+  "_README": [
+    "The realtor registry. Every entry becomes a page at /<slug>, and the generic",
+    "unnamed page stays at /. Adding a realtor is: one entry here, an optional",
+    "headshot, then `python build.py` and push. Vercel rebuilds on the push.",
+    "",
+    "One page serves everyone: /<slug> is a rewrite onto index.html and the close",
+    "is filled from this registry at load. So a new realtor costs a line of data,",
+    "not a duplicated copy of the whole checklist.",
+    "",
+    "An agent who is NOT in this registry is not blocked: /setup lets them type",
+    "their details and hands them a link that carries their own block in the URL",
+    "fragment. No deploy, no commit, no waiting on anyone. The registry is for the",
+    "tidy address, not for permission.",
+    "",
+    "Fields: slug, name, title, phone, email, site (optional), tagline (optional,",
+    "one short line under the name on the close), headshot (optional). A headshot",
+    "is the FILENAME under assets/headshots/, which make_assets.py produces from",
+    "assets/_source/headshot-<slug>.png. The build STOPS if the file named here is",
+    "missing, because a broken image on a client-facing close is a broken page.",
+    "",
+    "Nothing here changes the checklist. The list is the same for every realtor",
+    "and every seller; only the person on the close and the personal details in",
+    "the fragment change. That is the whole point of it being shareable."
+  ],
+  "brokerage": {
+    "name": "THE AGENCY",
+    "credit": "THE AGENCY, Brokerage"
+  },
+  "agents": [
+    {
+      "slug": "keith-godding",
+      "name": "Keith Godding",
+      "title": "Realtor",
+      "phone": "416-520-6687",
+      "email": "keith@firstaccesshomes.com",
+      "site": "firstaccesshomes.com",
+      "headshot": "keith-godding.jpg",
+      "tagline": "Toronto and the GTA"
+    }
+  ]
+}
