@@ -338,10 +338,16 @@ def main():
         # The home-screen icon. A browser does not request it, so nothing else
         # here would notice it missing, and the cost of it missing is a seller
         # who saves the list and gets a blurry screenshot as its icon.
-        icon = pg3.evaluate("""() => {
-          const l = document.querySelector('link[rel=\"apple-touch-icon\"]');
-          return l ? l.getAttribute('href') : null;
-        }""")
+        icons = pg3.evaluate("""() => [...document.querySelectorAll(
+          'link[rel=\"apple-touch-icon\"]')].map(l => l.getAttribute('href'))""")
+        # Two of these is not belt and braces, it is a coin toss: with no sizes
+        # attribute to choose by, the browser takes the last one declared, and
+        # the head already carried a link to the full red lockup whose wordmark
+        # is illegible at 60pt. One link, or the wrong icon ships.
+        if len(icons) > 1:
+            fails.append(f"{len(icons)} apple-touch-icon links, so the icon "
+                         f"is whichever comes last: {icons}")
+        icon = icons[0] if icons else None
         if not icon:
             fails.append("no apple-touch-icon, so a home-screen save gets a "
                          "screenshot for an icon")

@@ -298,7 +298,6 @@ def page(agent, brokerage, n_items, css_url, js_url):
 <link rel="apple-touch-icon" href="/a/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Prep list">
 <meta name="theme-color" content="#ED2127">
-<link rel="apple-touch-icon" href="/a/ta-mark-red.png">
 <link rel="preload" as="font" type="font/woff2" href="/a/fonts/flama-bold.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/a/fonts/din-reg.woff2" crossorigin>
 <link rel="stylesheet" href="{css_url}">
