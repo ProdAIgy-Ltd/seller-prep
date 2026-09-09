@@ -162,13 +162,15 @@ def agent_block(agent, brokerage):
     if not agent:
         # The block is present but empty, so a fragment-supplied realtor can
         # fill it at runtime without the page reflowing around a missing node.
-        return f"""<div class="agent" id="agentblock" hidden>
+        return f"""<div class="agent">
+<div class="who" id="agentblock" hidden>
 <img class="ph" id="ag-photo" alt="" hidden>
 <div><div class="nm2" id="ag-name"></div>
 <div class="rl" id="ag-title"></div>
 <div class="ct"><span id="ag-tag"></span><br>
 <a id="ag-phone" hidden></a><br><a id="ag-email" hidden></a><br>
 <a id="ag-site" hidden></a></div></div>
+</div>
 <div class="fmark"><img src="/a/ta-wordmark-wht.png" alt="{esc(brokerage['name'])}" width="132"></div>
 </div>"""
 
@@ -606,8 +608,9 @@ def main():
     cfg = json.loads((HERE / "vercel.json").read_text(encoding="utf-8"))
     # Destination is "/" and NOT "/index.html": cleanUrls renames index.html to
     # "/", so a rewrite aimed at the .html path lands on something that no
-    # longer resolves and every realtor route 404s. Caught on the deployed
-    # site, because a local static server has no cleanUrls to disagree with.
+    # longer resolves and every realtor route 404s. Caught on the DEPLOYED site
+    # (seller-prep.vercel.app), because a local static server has no cleanUrls
+    # to disagree with and resolved /index.html happily.
     cfg["rewrites"] = [{"source": "/" + a["slug"], "destination": "/"}
                        for a in agents]
     for k in ("buildCommand", "outputDirectory", "installCommand", "framework",

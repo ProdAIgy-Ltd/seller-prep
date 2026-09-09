@@ -6,10 +6,6 @@ fontTools nor Pillow.
 
     python make_assets.py
 
-NOT RUNNABLE IN THE PUBLIC DEPLOY REPO. It reads assets/_source/, which holds
-the licensed OTF originals and is deliberately absent here; run it in the
-private fieldwork repo and copy the generated files across.
-
 EVERYTHING IT READS LIVES IN THIS DIRECTORY. It used to reach across into
 _576-oakwood-floorplans/assets for the faces and the marks, which meant this
 project could not be copied, moved or deployed on its own, and a tidy-up in an

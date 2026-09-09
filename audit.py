@@ -145,6 +145,19 @@ def main():
         if cpl[0] > 80:
             fails.append(f"line length {cpl[0]} characters, too long to track")
 
+        # An element the page hides by attribute must actually be gone. An
+        # author `display:` rule silently beats the UA sheet's
+        # [hidden]{display:none}, which left an empty 21px rule under the hero
+        # and a 78px void in the close, both invisible to every other check.
+        leaked = pg.evaluate("""() => [...document.querySelectorAll('[hidden]')]
+          .map(el => ({what: el.id ? '#'+el.id : '.'+el.className.split(' ')[0],
+                       display: getComputedStyle(el).display,
+                       h: Math.round(el.getBoundingClientRect().height)}))
+          .filter(x => x.display !== 'none')""")
+        if leaked:
+            fails.append(f"[hidden] elements still rendering: {leaked}")
+        notes.append("every [hidden] element really is display:none")
+
         pg.screenshot(path=str(SHOTS / "phone-top.png"))
         pg.evaluate("window.scrollTo(0, document.querySelector('.phase').offsetTop - 60)")
         pg.wait_for_timeout(400)
