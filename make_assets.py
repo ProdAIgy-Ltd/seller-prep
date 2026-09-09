@@ -97,6 +97,47 @@ fav = Image.open(SRC / "TA_Logo_Red.png").convert("RGBA")
 fav.thumbnail((64, 64), Image.LANCZOS)
 fav.save(OUT / "favicon.png", optimize=True)
 
+# The home-screen icon. A seller who does not want paper puts this list on
+# their home screen, and iOS takes THIS file, not the favicon and not the
+# manifest. Two things it gets wrong if you hand it the mark as it comes:
+# transparency renders as black, and iOS applies its own rounding, so a
+# pre-rounded or edge-to-edge icon comes out wrong. So: flatten onto Canvas
+# white, and inset the mark to 62% of the box, which is the proportion Apple's
+# own icons keep and what stops it looking cramped beside them.
+ICON_PX = 180
+src_mark = Image.open(SRC / "TA_Logo_Red.png").convert("RGB")
+# Take the A monogram ALONE, measured out of the source rather than guessed at:
+# the white pixels above the wordmark. The full lockup does not work at 60pt.
+# Its wordmark would render about seven pixels tall, which is illegible, and
+# Apple's own guidance is to keep words out of an icon. The label under the
+# icon already says what this is.
+_w, _h = src_mark.size
+_px = src_mark.load()
+_xs, _ys = [], []
+for _y in range(0, int(_h * 0.55), 2):
+    for _x in range(0, _w, 2):
+        if all(c > 200 for c in _px[_x, _y]):
+            _xs.append(_x)
+            _ys.append(_y)
+box = (min(_xs), min(_ys), max(_xs) + 1, max(_ys) + 1)
+# Paint the monogram through a MASK rather than pasting a crop of the source.
+# A crop brings the source's own red with it, and that red is a hair off the
+# locked #ED2127, so the rectangle showed as a faint block behind the mark.
+# Alpha is a RAMP off the luminance, not the luminance itself: Agency Red sits
+# at luminance 95, so using L directly painted the whole crop 37% white and put
+# a pink block behind the mark. The ramp maps the red to nothing and the white
+# to solid, keeping the curve's antialiased edge in between.
+glyph = src_mark.crop(box).convert("L").point(
+    lambda v: 0 if v <= 130 else min(255, round((v - 130) * 255 / 105)))
+side = int(ICON_PX * 0.58)
+glyph = glyph.resize((side, round(side * glyph.height / glyph.width)), Image.LANCZOS)
+icon = Image.new("RGB", (ICON_PX, ICON_PX), "#ED2127")   # Agency Red, locked
+icon.paste(Image.new("RGB", glyph.size, "#FFFFFF"),
+           ((ICON_PX - glyph.width) // 2, (ICON_PX - glyph.height) // 2), glyph)
+icon.save(OUT / "apple-touch-icon.png", optimize=True)
+report.append(("apple-touch-icon.png", (SRC / "TA_Logo_Red.png").stat().st_size,
+               (OUT / "apple-touch-icon.png").stat().st_size))
+
 # ---- headshots -------------------------------------------------------------
 # Drawn at 62px in a circle on the close, so a 3x phone asks for 186 real
 # pixels and anything smaller is upscaled on the device. Any

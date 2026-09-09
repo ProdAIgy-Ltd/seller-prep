@@ -27,6 +27,10 @@ SHOTS = HERE / "shots"
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 CFG = json.loads((DIST / "vercel.json").read_text())
 PORT = 8731
+# The print stylesheet is tuned to keep the handout short; eleven pages is where
+# a checklist stops being read. Twelve is the line, so a normal edit never trips
+# it and a layout regression does.
+PAGE_CAP = 12
 
 # A personalised link, built the way /setup builds one: a condo seller who is
 # also buying, closing 2026-11-27.
@@ -73,6 +77,74 @@ def serve():
     srv = socketserver.TCPServer(("127.0.0.1", PORT), Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
+
+
+def ink_in_margins(browser, printed, pages):
+    """Render each printed page and look for ink where the margin should be.
+
+    Every other print check reads the DOM, which is the layout BEFORE Chromium
+    paginates it. Only the paper shows what pagination did. So: one PDF per
+    page, opened back in the browser's own PDF viewer, screenshotted, and
+    checked for any mark inside the 12mm side and 14mm top and bottom margins.
+    A page that fits has white edges. A page that does not shows ink there,
+    and that ink is content the printer will clip.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return ["Pillow is not installed, so the printed pages were not "
+                "checked for content running off the sheet"]
+
+    out = SHOTS / "print"
+    out.mkdir(exist_ok=True)
+    for old in out.glob("*.png"):
+        old.unlink()
+    viewer = browser.new_page(viewport={"width": 850, "height": 1120})
+    bad = []
+    for n in range(1, pages + 1):
+        one = out / f"page{n:02d}.pdf"
+        printed.pdf(path=str(one), format="Letter", print_background=True,
+                    page_ranges=str(n))
+        viewer.goto(f"file://{one}", wait_until="load")
+        viewer.wait_for_timeout(1400)
+        shot = out / f"page{n:02d}.png"
+        viewer.screenshot(path=str(shot))
+        one.unlink()
+        hit = _margin_ink(Image.open(shot))
+        if hit:
+            bad.append(f"page {n} has ink in the margin at {hit}, so the "
+                       f"printer will clip it")
+    viewer.close()
+    return bad
+
+
+def _margin_ink(im, side_mm=12, ends_mm=14, tol_mm=1.5):
+    """Find the sheet inside the viewer screenshot, then read its margins."""
+    im = im.convert("RGB")
+    w, h = im.size
+    px = im.load()
+    cols = [x for x in range(w)
+            if sum(1 for y in range(0, h, 6) if all(c > 235 for c in px[x, y]))
+            > (h / 6) * 0.5]
+    rows = [y for y in range(h)
+            if sum(1 for x in range(0, w, 6) if all(c > 235 for c in px[x, y]))
+            > (w / 6) * 0.5]
+    if not cols or not rows:
+        return None
+    sheet = im.crop((min(cols), min(rows), max(cols) + 1, max(rows) + 1))
+    W, H = sheet.size
+    bx = int((side_mm - tol_mm) * W / 215.9)
+    by = int((ends_mm - tol_mm) * H / 279.4)
+    p = sheet.load()
+    for y in range(0, H, 2):
+        for x in list(range(0, bx, 2)) + list(range(W - bx, W, 2)):
+            if not all(c > 240 for c in p[x, y]):
+                return f"x={x} y={y} of a {W}x{H} sheet"
+    for x in range(0, W, 2):
+        for y in list(range(0, by, 2)) + list(range(H - by, H, 2)):
+            if not all(c > 240 for c in p[x, y]):
+                return f"x={x} y={y} of a {W}x{H} sheet"
+    return None
 
 
 def main():
@@ -263,6 +335,32 @@ def main():
         else:
             notes.append(f"headshot loads ({head['w']}px for a {head['drawn']}px "
                          f"circle, clears 3x, alt {head['alt']!r})")
+        # The home-screen icon. A browser does not request it, so nothing else
+        # here would notice it missing, and the cost of it missing is a seller
+        # who saves the list and gets a blurry screenshot as its icon.
+        icon = pg3.evaluate("""() => {
+          const l = document.querySelector('link[rel=\"apple-touch-icon\"]');
+          return l ? l.getAttribute('href') : null;
+        }""")
+        if not icon:
+            fails.append("no apple-touch-icon, so a home-screen save gets a "
+                         "screenshot for an icon")
+        else:
+            r = pg3.request.get(base + icon)
+            if r.status != 200:
+                fails.append(f"the home-screen icon 404s at {icon}")
+            else:
+                dim = pg3.evaluate("""(src) => new Promise(res => {
+                  const i = new Image();
+                  i.onload = () => res(i.naturalWidth);
+                  i.onerror = () => res(0);
+                  i.src = src;
+                })""", icon)
+                if dim < 180:
+                    fails.append(f"the home-screen icon is {dim}px; iOS asks "
+                                 f"for 180")
+                else:
+                    notes.append(f"home-screen icon {dim}px, served at {icon}")
         notes.append("registry realtor resolves from the path")
         pg3.screenshot(path=str(SHOTS / "desk-top.png"))
         pg3.evaluate("window.scrollTo(0, document.querySelector('.phase').offsetTop - 80)")
@@ -298,11 +396,23 @@ def main():
         pg4.wait_for_timeout(400)
         pg4.screenshot(path=str(SHOTS / "desk-adhoc-footer.png"))
 
-        # ---- print --------------------------------------------------------
-        pg5 = ctx2.new_page()
+        # ---- print, measured on the paper itself ---------------------------
+        # A seller prints this and ticks it with a pen, so "it prints" is not
+        # the bar: nothing may be cut off, no tick box may be missing, and no
+        # block may be too tall to fit a sheet. The first two are measured in
+        # the DOM at the exact printable size; the last is measured on the
+        # RENDERED PAGES, by looking for ink where the margin should be.
+        MM = 96 / 25.4
+        PRINT_W = round((215.9 - 24) * MM)     # Letter less the 12mm side margins
+        PRINT_H = round((279.4 - 28) * MM)     # less the 14mm top and bottom
+        ctx5 = br.new_context(viewport={"width": PRINT_W, "height": PRINT_H},
+                              device_scale_factor=1)
+        pg5 = ctx5.new_page()
         visit(pg5, f"{base}/keith-godding#{SELLER}")
         pg5.wait_for_timeout(300)
         pg5.emulate_media(media="print")
+        pg5.wait_for_timeout(200)
+
         hidden_details = pg5.evaluate("""() => {
           let n=0;
           document.querySelectorAll('.det').forEach(d=>{
@@ -312,10 +422,95 @@ def main():
         }""")
         if hidden_details:
             fails.append(f"print hides {hidden_details} detail blocks; paper cannot be clicked")
-        pg5.pdf(path=str(SHOTS / "print.pdf"), format="Letter",
-                print_background=True, margin={"top": "14mm", "bottom": "14mm",
-                                               "left": "12mm", "right": "12mm"})
+
+        wide = pg5.evaluate("""(W) => {
+          const out=[];
+          document.querySelectorAll('body *').forEach(el=>{
+            const cs=getComputedStyle(el);
+            if(cs.display==='none'||cs.visibility==='hidden') return;
+            const r=el.getBoundingClientRect();
+            if(r.width===0&&r.height===0) return;
+            if(r.right>W+1||r.left<-1)
+              out.push((el.tagName+'.'+(el.className||'')).slice(0,40)
+                       +' ['+Math.round(r.left)+'..'+Math.round(r.right)+']');
+          });
+          return out.slice(0,6);
+        }""", PRINT_W)
+        if wide:
+            fails.append(f"content runs past the {PRINT_W}px printable width: {wide}")
+
+        # break-inside:avoid cannot save a block that is taller than the sheet.
+        # That one WILL be split, and a split is where a reader loses the thread.
+        tootall = pg5.evaluate("""(H) => {
+          const out=[];
+          document.querySelectorAll('li.item,.card,.phead,.agent').forEach(el=>{
+            const r=el.getBoundingClientRect();
+            if(r.height>H) out.push(Math.round(r.height)+'px: '
+              +(el.textContent||'').trim().slice(0,40));
+          });
+          return out;
+        }""", PRINT_H)
+        if tootall:
+            fails.append(f"blocks taller than one {PRINT_H}px page, so they get cut: {tootall}")
+
+        boxes = pg5.evaluate("""() => {
+          const out={shown:0, missing:[]};
+          document.querySelectorAll('li.item').forEach(li=>{
+            if(getComputedStyle(li).display==='none') return;
+            out.shown++;
+            const b=li.querySelector('input[type=checkbox]');
+            const r=b?b.getBoundingClientRect():{width:0,height:0};
+            if(!b||r.width<10||r.height<10)
+              out.missing.push((li.dataset.id||'?'));
+          });
+          return out;
+        }""")
+        if boxes["missing"]:
+            fails.append("items with no tick box on paper: " + ", ".join(boxes["missing"]))
+
+        faint = pg5.evaluate("""() => {
+          function bg(el){ let e=el;
+            while(e){ const c=getComputedStyle(e).backgroundColor;
+              if(c&&c!=='rgba(0, 0, 0, 0)'&&c!=='transparent') return c;
+              e=e.parentElement; }
+            return 'rgb(255, 255, 255)'; }
+          const bad=[];
+          document.querySelectorAll('h1,h2,h3,p,li,span,a,div,b').forEach(el=>{
+            const t=[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim());
+            if(!t) return;
+            const cs=getComputedStyle(el);
+            if(cs.display==='none'||cs.visibility==='hidden') return;
+            const f=cs.color.match(/\d+/g).map(Number), k=bg(el).match(/\d+/g).map(Number);
+            if(Math.abs(f[0]-k[0])+Math.abs(f[1]-k[1])+Math.abs(f[2]-k[2]) < 90)
+              bad.push(el.textContent.trim().slice(0,30));
+          });
+          return bad.slice(0,5);
+        }""")
+        if faint:
+            fails.append(f"text that will not read on paper: {faint}")
+
+        pdf = SHOTS / "print.pdf"
+        pg5.pdf(path=str(pdf), format="Letter", print_background=True)
+        raw = pdf.read_bytes()
+        pages = raw.count(b"/Type /Page\n") or raw.count(b"/Type/Page")
+        if not pages:
+            fails.append("the print PDF reports no pages")
+        # A cap, for two reasons. A handout that runs to eleven pages gets
+        # skimmed and the whole print stylesheet is tuned to keep it under
+        # that, so a jump past it is a regression worth failing on its own.
+        # And the per-page render below costs about a second and a half a
+        # page, so a layout bug that explodes the page count would otherwise
+        # turn the gate into a coffee break instead of a red line.
+        elif pages > PAGE_CAP:
+            fails.append(f"the list prints to {pages} pages, past the "
+                         f"{PAGE_CAP} it is laid out to fit; not rendering "
+                         f"them all")
+        else:
+            fails.extend(ink_in_margins(br, pg5, pages))
+        notes.append(f"print: {pages} pages, {boxes['shown']} tick boxes, "
+                     f"nothing past {PRINT_W}px, no ink in the margins")
         pg5.emulate_media(media="screen")
+        ctx5.close()
         notes.append("print opens every fold")
 
         # ---- setup page ---------------------------------------------------

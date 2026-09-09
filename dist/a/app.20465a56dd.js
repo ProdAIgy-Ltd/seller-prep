@@ -349,7 +349,33 @@ function boot(){
     b.addEventListener('click',function(){ window.print(); });
   });
 
-  var cal=document.getElementById('cal');
+  // ---- keeping it without paper -------------------------------------------
+  // The steps differ per phone and getting them wrong is worse than not
+  // offering them, so name the one they are holding. Deliberately NO web app
+  // manifest: on Android, Chrome installs a manifest's start_url, and this
+  // page's whole personalisation rides in the URL fragment, so an install
+  // would hand the client a blank list. Without one, "Add to Home screen" is
+  // a plain shortcut to the exact URL they are looking at, fragment and all.
+  var kdlg=document.getElementById('kdlg');
+  var keep=document.getElementById('keep');
+  if(keep && kdlg) keep.addEventListener('click',function(){
+    var ua=navigator.userAgent||'';
+    var ios=/iPad|iPhone|iPod/.test(ua) ||
+            (/Macintosh/.test(ua) && navigator.maxTouchPoints>1);
+    var steps = ios
+      ? ['Tap the share button at the bottom of Safari. It is the square with '
+         + 'an arrow coming out of it.',
+         'Scroll down and tap <b>Add to Home Screen</b>, then tap <b>Add</b>.']
+      : ['Tap the three dots at the top right of Chrome.',
+         'Tap <b>Add to Home screen</b>, then tap <b>Add</b>.'];
+    steps.push('The list is now an icon on your phone. Open it any time and '
+               + 'your ticks are still there.');
+    document.getElementById('k-steps').innerHTML =
+      steps.map(function(t){ return '<li>'+t+'</li>'; }).join('');
+    kdlg.showModal();
+  });
+
+  var cal=document.getElementById('cal')||document.getElementById('k-cal');
   if(cal) cal.addEventListener('click',function(){
     var t=buildICS();
     if(!t){ alert('Add your closing date first and the dates become real.'); return; }

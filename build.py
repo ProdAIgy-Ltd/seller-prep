@@ -244,6 +244,29 @@ DIALOG = """<dialog id="pdlg" aria-labelledby="dlgh">
 <button class="btn ghost" type="button" data-close-dlg>Cancel</button>
 </div>
 </form>
+</div></dialog>
+
+<!-- Keeping it without paper. A seller who does not want a printout still wants
+     the list somewhere they will find it again, and "bookmark it" is not an
+     answer anybody follows. The home screen is: it becomes an icon beside their
+     other apps, it opens straight back to their own list, and the ticks are
+     already on the device. So this dialog takes a position and leads with that,
+     with the two steps for the phone they are actually holding. The PDF and the
+     calendar follow as the other two things a person might want. -->
+<dialog id="kdlg" aria-labelledby="kdlgh">
+<form method="dialog"></form>
+<div class="dlg">
+<h3 id="kdlgh">Keep this on your phone</h3>
+<p>No paper needed. Put it on your home screen and it opens like an app, with
+your own dates and your ticks already on it.</p>
+<ol class="steps" id="k-steps"></ol>
+<p class="hint" id="k-other">Prefer a file? Choose <b>Print</b> and then
+<b>Save as PDF</b> instead. A PDF is a snapshot, so ticks made after you save it
+will not show up in it.</p>
+<div class="btnrow full">
+<button class="btn red" type="button" id="k-cal">Put the dates in my calendar</button>
+<button class="btn ghost" type="button" data-close-dlg>Close</button>
+</div>
 </div></dialog>"""
 
 
@@ -268,6 +291,13 @@ def page(agent, brokerage, n_items, css_url, js_url):
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:type" content="article">
 <link rel="icon" href="/a/favicon.png" type="image/png">
+<!-- A seller who does not want paper puts this on their home screen. iOS
+     takes THIS file for the icon, not the favicon. There is deliberately no
+     web app manifest: Chrome would install its start_url, and the client's
+     dates ride in the URL fragment, so an install would open a blank list. -->
+<link rel="apple-touch-icon" href="/a/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Prep list">
+<meta name="theme-color" content="#ED2127">
 <link rel="apple-touch-icon" href="/a/ta-mark-red.png">
 <link rel="preload" as="font" type="font/woff2" href="/a/fonts/flama-bold.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/a/fonts/din-reg.woff2" crossorigin>
@@ -313,7 +343,7 @@ order it needs doing.</span></p>
 <p id="setup-p"></p>
 <div class="btnrow">
 <button class="btn" type="button" data-open-setup><span id="setup-b">Add my details</span></button>
-<button class="btn ghost" type="button" id="cal">Add to calendar</button>
+<button class="btn ghost" type="button" id="keep">Keep it on my phone</button>
 <button class="btn ghost" type="button" data-print>Print</button>
 </div>
 </div>

@@ -230,6 +230,44 @@ carries them in a fold on the close. Claims verified during the build:
   covered by the principal residence exemption; not reporting runs to one
   hundred dollars a month up to eight thousand.
 
+### Paper, and the seller who does not want paper
+
+A seller prints this and ticks it with a pen, so "it prints" is not the bar.
+`audit.py` measures the paper: nothing past the 725px printable width of a
+Letter sheet, no block taller than one 950px page (`break-inside: avoid`
+cannot save a block that does not fit, and that one gets cut), a tick box on
+every visible item, no text that will not read in ink, and then the part only
+paper can answer. It renders each printed page through the browser's own PDF
+viewer and looks for ink inside the margins, because every other check reads
+the layout BEFORE the browser paginates it. A page that fits has white edges.
+It currently runs to **8 pages**, and the gate fails past 12 both because a
+longer handout gets skimmed and because rendering pages costs about a second
+and a half each. The pages land in `shots/print/` for the eye.
+
+Verified against four mutants: the page made wider than the sheet, the tick
+boxes hidden in print, an item made taller than a page, and the print margin
+cut to 3mm, which is inside what most printers can physically reach. Each was
+caught, and the last one only by the ink check.
+
+**Without paper**, the answer is the home screen, and the page takes that
+position rather than offering a menu. "Keep it on my phone" gives the two
+steps for the phone the reader is actually holding, iOS or Android, and then
+the list is an icon that opens straight back to their own dates with their
+ticks intact, since the ticks live on that device. A PDF and the calendar
+export sit underneath as the other two things somebody might want.
+
+There is deliberately **no web app manifest**. On Android, Chrome installs a
+manifest's `start_url`, and every personal detail on this page rides in the
+URL fragment, so an install would hand the client a blank list. Without one,
+"Add to Home screen" is a plain shortcut to the exact URL in front of them,
+fragment and all. What the page does carry is an `apple-touch-icon`, because
+iOS takes that file and nothing else for the icon: the Agency monogram in
+white on Agency Red, edge to edge, since iOS applies its own rounding and
+Apple's guidance is to keep words out of an icon. The gate checks it is there,
+returns 200 and is 180px, because a browser never requests it, so nothing else
+would notice it missing until a seller saw a blurry screenshot on their home
+screen.
+
 ### What audit.py measures
 
 Not "does it load". It checks that every asset returns 200 at both `/` and

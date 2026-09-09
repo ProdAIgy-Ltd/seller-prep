@@ -301,6 +301,19 @@ dialog::backdrop{background:rgba(12,12,12,.55);backdrop-filter:blur(3px)}
 .dlg{padding:24px}
 .dlg h3{font-family:var(--disp);font-weight:500;font-size:23px;line-height:1.2}
 .dlg>p{font-size:14.5px;color:var(--grey);margin-top:8px}
+/* The steps for putting this on a home screen. Numbered, because they are done
+   in order on a phone the reader is holding while they read them. */
+.steps{margin:16px 0 0;padding:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;position:relative;padding:0 0 0 34px;margin-top:11px;
+  font-size:14.5px;line-height:1.5;color:var(--ink)}
+.steps li:before{content:counter(s);position:absolute;left:0;top:1px;width:23px;
+  height:23px;border-radius:50%;background:var(--red);color:#fff;
+  font:700 12px/23px var(--body);text-align:center}
+.steps li b{font-weight:700;color:var(--ink)}
+/* Direct child only. `.hint` is also the small note under a field, and an
+   unscoped rule put a rule line under 'Every date is counted back from
+   this' in the other dialog. */
+.dlg>.hint{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .out{
   margin-top:16px;background:var(--plaster);border:1px solid var(--line2);
   border-radius:9px;padding:12px 13px;font-size:12.5px;word-break:break-all;
@@ -724,7 +737,33 @@ function boot(){
     b.addEventListener('click',function(){ window.print(); });
   });
 
-  var cal=document.getElementById('cal');
+  // ---- keeping it without paper -------------------------------------------
+  // The steps differ per phone and getting them wrong is worse than not
+  // offering them, so name the one they are holding. Deliberately NO web app
+  // manifest: on Android, Chrome installs a manifest's start_url, and this
+  // page's whole personalisation rides in the URL fragment, so an install
+  // would hand the client a blank list. Without one, "Add to Home screen" is
+  // a plain shortcut to the exact URL they are looking at, fragment and all.
+  var kdlg=document.getElementById('kdlg');
+  var keep=document.getElementById('keep');
+  if(keep && kdlg) keep.addEventListener('click',function(){
+    var ua=navigator.userAgent||'';
+    var ios=/iPad|iPhone|iPod/.test(ua) ||
+            (/Macintosh/.test(ua) && navigator.maxTouchPoints>1);
+    var steps = ios
+      ? ['Tap the share button at the bottom of Safari. It is the square with '
+         + 'an arrow coming out of it.',
+         'Scroll down and tap <b>Add to Home Screen</b>, then tap <b>Add</b>.']
+      : ['Tap the three dots at the top right of Chrome.',
+         'Tap <b>Add to Home screen</b>, then tap <b>Add</b>.'];
+    steps.push('The list is now an icon on your phone. Open it any time and '
+               + 'your ticks are still there.');
+    document.getElementById('k-steps').innerHTML =
+      steps.map(function(t){ return '<li>'+t+'</li>'; }).join('');
+    kdlg.showModal();
+  });
+
+  var cal=document.getElementById('cal')||document.getElementById('k-cal');
   if(cal) cal.addEventListener('click',function(){
     var t=buildICS();
     if(!t){ alert('Add your closing date first and the dates become real.'); return; }
