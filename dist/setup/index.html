@@ -53,9 +53,20 @@ published.</p>
 <input type="text" id="g-site" placeholder="firstaccesshomes.com"></div>
 <div class="fld"><label for="g-tag">One line under your name</label>
 <input type="text" id="g-tag" placeholder="Toronto and the GTA"></div>
-<div class="fld full"><label for="g-photo">Headshot address, if you have one online</label>
-<input type="text" id="g-photo" placeholder="https://...jpg">
-<div class="hint">Leave this empty and the close simply has no photograph.</div></div>
+<div class="fld full"><label for="g-photo">Your photograph</label>
+<div class="photo">
+<img id="g-prev" alt="" hidden>
+<div class="photo-c">
+<div class="btnrow" style="margin-top:0">
+<label class="btn ghost" for="g-file">Upload a photo</label>
+<input type="file" id="g-file" accept="image/*" hidden>
+<button class="btn ghost" type="button" id="g-clear" hidden>Remove</button>
+</div>
+<div class="hint" id="g-note">Or paste the address of one already online, below.
+Leave both empty and the close simply has no photograph.</div>
+</div></div>
+<input type="text" id="g-photo" placeholder="https://...jpg" style="margin-top:11px">
+</div>
 </form>
 </div>
 
@@ -84,6 +95,7 @@ well.</p>
 <div class="stepn">Step three</div>
 <h2>Take the link</h2>
 <div class="out" id="out">Fill something in above.</div>
+<div class="len" id="len"></div>
 <div class="btnrow">
 <button class="btn red" type="button" id="copy">Copy link</button>
 <a class="btn ghost" id="open" href="/" target="_blank" rel="noopener">Open it</a>
@@ -104,5 +116,5 @@ rather than in a long link, is one line in <b>agents.json</b> and a push.</p>
 </div>
 </div></footer>
 
-<script src="/a/setup.389c95867a.js" defer></script>
+<script src="/a/setup.4cc3dfdba2.js" defer></script>
 </body></html>

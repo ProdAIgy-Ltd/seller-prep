@@ -36,7 +36,6 @@ Two consequences:
 - Nothing secret belongs in this repo. No client data, no keys, no prod
   anything. The page holds no client data by design: seller details ride in
   the URL fragment and never reach a server.
-
 ---
 
 ## How one page serves many realtors and many clients
@@ -59,9 +58,36 @@ gives an agent a long ugly URL to put on a listing presentation. So: the
 registry is for the tidy address, not for permission.
 
 Adding an agent to the registry is one object in `agents.json` plus an optional
-headshot at `assets/headshots/<slug>.jpg`. The build **stops** if the headshot
+headshot at `assets/headshots/<slug>.webp`. The build **stops** if the headshot
 named there is missing, because a broken image on a client-facing close is a
 broken page and it should never reach a deploy.
+
+#### The photograph, both ways
+
+An agent filling in `/setup` has two ways to get their face on the close, and
+neither of them involves anybody with repository access.
+
+**Upload it.** The file is cropped square, biased upward so a portrait does not
+lose the top of the head, shrunk to 192px and encoded to WebP **in the
+browser**, then carried inside the link as a `data:` URI. There is no server to
+upload to. Measured end to end: a 176KB phone photograph becomes about 6KB and
+the finished link about 11,000 characters, which sends fine by email or text
+and looks unwieldy written out. Zero network requests are made while it
+happens, which is checked rather than claimed.
+
+**Paste its address.** Shorter link, same picture, and it depends on that
+address staying up. This used to fail in silence: the content policy allows an
+image from `self`, `https:` or `data:` and nothing else, so an `http://`
+address or a Drive share page (a page, not a picture) simply never appeared and
+the agent found out from a client. The field now checks the address in front of
+them and says which of those three things went wrong, previews what will
+actually render, and warns when the photograph it found is too small for a
+phone.
+
+A browser that cannot decode the photograph hides it. That is the runtime twin
+of the build-time guard above, and it covers the server-rendered registry photo
+too, which `stampAgent` never touches. Verified against a mutant that replaced
+the headshot with bytes no browser can read.
 
 ### Who it is for
 
@@ -118,7 +144,7 @@ abstraction before the second case is how it gets built wrong.
 | `build.py` | Assembles the pages, runs the copy gate, writes `dist/`. |
 | `make_assets.py` | Subsets the licensed faces to woff2, sizes the marks, and crops headshots. Reads only `assets/_source/`. Run after changing source art; output is committed. |
 | `audit.py` | Renders the built pages in Chromium and measures them. |
-| `assets/_source/` | Not in this repo. The licensed OTF originals live in the private fieldwork repo. |
+| `assets/_source/` | The source art: five licensed OTF faces, three marks, headshots. **Never deployed.** |
 | `dist/` | The built site, committed. Drop it on any static host with no build step. |
 
 ### Assets
@@ -130,7 +156,7 @@ Everything the site needs is in this directory. `make_assets.py` reads only
 |---|---|
 | `_source/fonts/*.otf` (5 licensed faces) | `fonts/*.woff2`, subset to the glyphs the page draws, 45KB total |
 | `_source/TA_*.png` | `ta-mark-red.png`, the two wordmarks, `favicon.png` |
-| `_source/headshot-<slug>.png` | `headshots/<slug>.jpg`, square, cropped upward, 176px, about 7KB |
+| `_source/headshot-<slug>.png` | `headshots/<slug>.webp`, square, cropped upward, 192px, about 6KB |
 
 **`_source/` never ships.** The subset faces exist so a licensed font does not
 sit on a public URL in its original form, and a plain `copytree` once undid
@@ -138,17 +164,43 @@ that by sweeping the whole folder into the deploy. The build now excludes it
 and asserts no `.otf`, `.ttf` or `.woff` reached the tree, verified against a
 mutant of the pre-fix line.
 
-To add a realtor's photograph: do it in the private fieldwork repo, where the
-source art lives. Drop `assets/_source/headshot-<slug>.png`, run
-`python make_assets.py`, then copy the resulting `assets/headshots/<slug>.jpg`
-here and set `"headshot": "<slug>.jpg"` in `agents.json`. The build stops if
-that file is missing, so a broken close can never reach a deploy.
+To add a realtor's photograph: drop `assets/_source/headshot-<slug>.png`, run
+`python make_assets.py`, and set `"headshot": "<slug>.webp"` in `agents.json`.
+The build stops if that file is missing.
+
+#### Why 192px WebP at quality 88
+
+The close draws the face at 62px in a circle, so a 3x phone asks for 186 real
+pixels. Under that the device is upscaling, and upscaling is what soft looks
+like. Root-mean-square error per channel against the untouched source crop:
+
+| | bytes | error |
+|---|---|---|
+| 128 WebP q72 | 2,184 | 5.19 |
+| 176 JPEG q86 (what this shipped before) | 7,205 | 2.94 |
+| **192 WebP q88** | **6,078** | **2.28** |
+| 192 WebP q94 | 8,890 | 1.76 |
+
+So the WebP is sharper AND smaller than the JPEG it replaced, and q94 buys half
+a point for half again the bytes. `/setup`'s browser-side uploader encodes to
+the same 192 at 0.88, so a self-serve photograph and a registry photograph are
+the same picture, and the length readout no longer claims otherwise.
+
+`audit.py` checks the ratio rather than the number: it fails if the photograph
+supplies fewer than three times the pixels the close draws, which catches both
+a shrunken asset and a close that grows the circle. Verified against a mutant
+that re-encoded the headshot at 128px.
 
 ### The copy gate
 
 `build.py` runs over the **rendered** text of every page, not the source, and
 fails the build on an em-dash, an en-dash, the word "AI", finance jargon, or a
-first person plural. The last one is the realtor-agnostic rule made mechanical:
+first person plural. It also runs over the **runtime copy**: the gate strips
+`<script>` before it reads a page, so the progress line, the calendar text and
+every message `/setup` shows a realtor were going unchecked. Those are read by
+a seller exactly like the HTML, so the JS string literals carrying a space (the
+sentences, as opposed to `input,select` and `tel:`) go through the same
+patterns. Verified against a mutant with a "we" planted in the runtime. The last one is the realtor-agnostic rule made mechanical:
 a "we" in the checklist puts words in the mouth of whichever agent shares it.
 
 The voice is therefore second person to the seller throughout. This is a
@@ -188,5 +240,7 @@ the headline fits screen one on a 390px phone, that line length stays under 80
 characters, that every hit target clears 44px, that a closing date really does
 turn every offset into a date, that the flags filter **in both directions** (a
 house seller must not be shown the elevator booking, and the reverse), that
-ticks survive a reload, that print opens every fold, and that `/setup` builds a
+ticks survive a reload, that no element the page hides by attribute is still
+taking up space, that the realtor's photograph carries at least three times the
+pixels it is drawn at, that print opens every fold, and that `/setup` builds a
 link with the details in the fragment rather than the query string.

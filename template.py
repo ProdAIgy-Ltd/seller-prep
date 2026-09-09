@@ -640,6 +640,16 @@ function buildICS(){
 // Wiring
 // ---------------------------------------------------------------------------
 function boot(){
+  // The registry photograph is rendered by the build, so stampAgent's onerror
+  // never sees it. Guard it here too: a face that will not decode has to
+  // disappear, not sit on a client-facing close as a broken frame. The content
+  // policy forbids an inline onerror attribute, so it is attached here, and it
+  // is attached before anything else in case the decode has already failed.
+  var rp = document.getElementById('ag-photo');
+  if(rp && rp.getAttribute('src')){
+    rp.addEventListener('error', function(){ rp.hidden = true; });
+    if(rp.complete && !rp.naturalWidth) rp.hidden = true;
+  }
   // Fold toggles
   document.querySelectorAll('.more').forEach(function(b){
     b.addEventListener('click',function(){

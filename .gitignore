@@ -5,3 +5,8 @@ __pycache__/
 # dist/ is DELIBERATELY NOT ignored. Vercel builds it, but keeping it in git
 # means the exact bytes being served are reviewable in a diff, and the folder
 # can be dropped on any static host with no build step.
+
+# The licensed OTF originals live in the fieldwork repo and must never reach
+# this public one. make_assets.py does not run here, so nothing needs them;
+# this line is the belt to the sync script's braces.
+assets/_source/

@@ -98,11 +98,26 @@ fav.thumbnail((64, 64), Image.LANCZOS)
 fav.save(OUT / "favicon.png", optimize=True)
 
 # ---- headshots -------------------------------------------------------------
-# Drawn at 58px and rendered as a circle, so a square crop at 3x is plenty. Any
-# assets/_source/headshot-<slug>.* becomes assets/headshots/<slug>.jpg, which is
-# the filename agents.json points at. JPEG rather than PNG: these are
-# photographs, and the PNG source is fifteen times the size for no visible gain.
-HEAD_PX = 176
+# Drawn at 62px in a circle on the close, so a 3x phone asks for 186 real
+# pixels and anything smaller is upscaled on the device. Any
+# assets/_source/headshot-<slug>.* becomes assets/headshots/<slug>.webp, which
+# is the filename agents.json points at.
+#
+# 192px WebP at quality 88, measured, not guessed. Root-mean-square error per
+# channel against the untouched source crop, with the encoded bytes:
+#
+#     128 WebP q72   2,184 B   5.19
+#     176 JPEG q86   7,205 B   2.94   <- what this used to ship
+#     192 WebP q88   6,078 B   2.28
+#     192 WebP q94   8,890 B   1.76
+#
+# So the WebP is sharper AND smaller than the JPEG it replaces, and q94 buys
+# half a point of error for half again the bytes. WebP has been in every
+# browser since Safari 14 (2020), and the same 192/0.88 pair is what the /setup
+# uploader encodes in the browser, so a self-serve photograph and a registry
+# photograph are the same picture.
+HEAD_PX = 192
+HEAD_Q = 88
 for src in sorted(SRC.glob("headshot-*")):
     slug = src.stem[len("headshot-"):]
     im = Image.open(src).convert("RGB")
@@ -114,9 +129,12 @@ for src in sorted(SRC.glob("headshot-*")):
     top = min(max(0, (h - side) // 4), h - side)
     im = im.crop((left, top, left + side, top + side))
     im = im.resize((HEAD_PX, HEAD_PX), Image.LANCZOS)
-    dest = OUT / "headshots" / f"{slug}.jpg"
-    im.save(dest, "JPEG", quality=86, optimize=True, progressive=True)
-    report.append((f"headshots/{slug}.jpg", src.stat().st_size, dest.stat().st_size))
+    dest = OUT / "headshots" / f"{slug}.webp"
+    im.save(dest, "WEBP", quality=HEAD_Q, method=6)
+    stale = OUT / "headshots" / f"{slug}.jpg"
+    if stale.exists():
+        stale.unlink()
+    report.append((f"headshots/{slug}.webp", src.stat().st_size, dest.stat().st_size))
 
 font_total = sum(r[2] for r in report[:len(FACES)])
 served = sum(p.stat().st_size for p in OUT.rglob("*")

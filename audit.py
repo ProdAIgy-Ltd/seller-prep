@@ -243,7 +243,8 @@ def main():
         head = pg3.evaluate("""() => {
           const i=document.getElementById('ag-photo');
           if(!i || i.hidden) return null;
-          return {src:i.getAttribute('src'), w:i.naturalWidth, alt:i.alt};
+          return {src:i.getAttribute('src'), w:i.naturalWidth, alt:i.alt,
+                  drawn: Math.round(i.getBoundingClientRect().width)};
         }""")
         if not head:
             fails.append("the registry realtor's headshot is not showing")
@@ -251,8 +252,17 @@ def main():
             fails.append(f"the headshot did not decode: {head['src']}")
         elif not head["alt"]:
             fails.append("the headshot has no alt text")
+        elif head["w"] < head["drawn"] * 3:
+            # A photograph the device has to upscale is the soft one, and soft
+            # on a face is the first thing a client notices. Three times the
+            # drawn size is what a modern phone asks for, so it is the floor,
+            # checked rather than remembered: this fails if the asset shrinks
+            # OR if the close ever draws it bigger.
+            fails.append(f"headshot is {head['w']}px for a {head['drawn']}px "
+                         f"circle: a 3x screen needs {head['drawn'] * 3}px")
         else:
-            notes.append(f"headshot loads ({head['w']}px, alt {head['alt']!r})")
+            notes.append(f"headshot loads ({head['w']}px for a {head['drawn']}px "
+                         f"circle, clears 3x, alt {head['alt']!r})")
         notes.append("registry realtor resolves from the path")
         pg3.screenshot(path=str(SHOTS / "desk-top.png"))
         pg3.evaluate("window.scrollTo(0, document.querySelector('.phase').offsetTop - 80)")
