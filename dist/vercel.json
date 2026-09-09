@@ -45,7 +45,7 @@
   "rewrites": [
     {
       "source": "/keith-godding",
-      "destination": "/index.html"
+      "destination": "/"
     }
   ]
 }

@@ -604,7 +604,11 @@ def main():
     # in with the build-only keys stripped. Both modes therefore get the same
     # headers and neither has its own copy to drift.
     cfg = json.loads((HERE / "vercel.json").read_text(encoding="utf-8"))
-    cfg["rewrites"] = [{"source": "/" + a["slug"], "destination": "/index.html"}
+    # Destination is "/" and NOT "/index.html": cleanUrls renames index.html to
+    # "/", so a rewrite aimed at the .html path lands on something that no
+    # longer resolves and every realtor route 404s. Caught on the deployed
+    # site, because a local static server has no cleanUrls to disagree with.
+    cfg["rewrites"] = [{"source": "/" + a["slug"], "destination": "/"}
                        for a in agents]
     for k in ("buildCommand", "outputDirectory", "installCommand", "framework",
               "$schema"):
